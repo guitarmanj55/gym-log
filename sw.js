@@ -2,7 +2,7 @@
    HTML, the manifest and JS modules are network-first so updates arrive as soon as
    you're online; icons and fonts are cache-first. Bump CACHE on every release and
    list every module in SHELL, or the app breaks offline. */
-var CACHE = "gymlog-v2";
+var CACHE = "gymlog-v3";
 var SHELL = [
   "./",
   "index.html",
@@ -24,9 +24,12 @@ var SHELL = [
   "src/screens/backup.js"
 ];
 
+/* GitHub Pages sends max-age=600, so plain fetches can get a copy up to 10 minutes old.
+   "reload" (install) and "no-cache" (network-first) go to the server every time; no-cache
+   still lets it answer 304 Not Modified, so unchanged files cost almost nothing. */
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(CACHE).then(function(cache){
-    return cache.addAll(SHELL);
+    return cache.addAll(SHELL.map(function(u){ return new Request(u, {cache: "reload"}); }));
   }).then(function(){ return self.skipWaiting(); }));
 });
 
@@ -52,7 +55,7 @@ function fromCache(req){
 /* Gym wifi is often slow rather than down, so after 3 s fall back to the cached
    copy instead of waiting; the fetch still finishes and refreshes the cache. */
 function networkFirst(req){
-  var net = fetch(req).then(function(res){
+  var net = fetch(new Request(req.url, {cache: "no-cache", credentials: "same-origin"})).then(function(res){
     if(res.ok){ var copy = res.clone(); caches.open(CACHE).then(function(c){ c.put(req, copy); }); }
     return res;
   });

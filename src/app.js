@@ -32,7 +32,7 @@ async function route() {
   // A slower render from an earlier tap must not replace the current screen.
   if (id !== renderId) return;
   root.replaceChildren(view);
-  root.scrollTop = 0;
+  window.scrollTo(0, 0);
 }
 
 async function askPersist() {
@@ -61,5 +61,15 @@ askPersist();
 announceUpdate();
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  // When a new release's worker takes over, reload once so its files are used straight away.
+  // Skipped on the very first install, when there was no worker before.
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
+  }
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    // The home-screen app often resumes instead of relaunching, so check for a release on return.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+    });
+  }).catch(() => {});
 }
