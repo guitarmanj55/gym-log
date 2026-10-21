@@ -265,6 +265,9 @@ a.btn{text-decoration:none}
 #tabs a{flex:1;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:12px;font-weight:500}
 #tabs a[aria-current="page"]{color:var(--accent);font-weight:600}
 #tabs svg{width:24px;height:24px}
+#tabs a{position:relative}
+#tabs a.alert::after{content:'';position:absolute;top:6px;left:calc(50% + 8px);width:9px;height:9px;border-radius:50%;background:var(--warn);border:2px solid var(--bg)}
+a.banner{text-decoration:none;color:inherit}
 
 /* ============ TOAST ============ */
 #toast{position:fixed;left:16px;right:16px;bottom:calc(var(--tabs-bottom) + 70px);margin:0 auto;max-width:420px;background:var(--raised);border:1px solid var(--line-strong);color:var(--text);border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.4;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:10}
@@ -297,8 +300,8 @@ a.btn{text-decoration:none}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.4";
-var APP_WHATS_NEW = "the Lifts tab shows each lift's e1RM trend, stats and top-set history";
+var APP_VERSION = "0.5";
+var APP_WHATS_NEW = "a weekly backup reminder on Today and the Backup tab";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

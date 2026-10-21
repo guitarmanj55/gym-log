@@ -26,4 +26,4 @@ Regenerate the icons with `powershell -File scripts\make_icons.ps1`.
 
 ## Status
 
-Build steps 1 to 4: the app shell (offline, installable), the IndexedDB data layer, JSON backups, the Active workout screen (prefill from last time, steppers, rest timer, live e1RM, plates per side), Today (up next, week strip, recent top sets), History (search, PRs) and Lifts (e1RM chart, stats, top-set history). Next: the weekly backup reminder. See `CLAUDE.md` for the rules and build order, and `design/` for the screens.
+All six build steps are in: the app shell (offline, installable), the IndexedDB data layer, JSON backups with a weekly reminder, the Active workout screen (prefill from last time, steppers, rest timer, live e1RM, plates per side), Today (up next, week strip, recent top sets), History (search, PRs) and Lifts (e1RM chart, stats, top-set history). See `CLAUDE.md` for the rules and `design/` for the screens.

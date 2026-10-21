@@ -58,7 +58,10 @@ export async function render(root) {
     </div>`;
 
   const input = root.querySelector('input[type=file]');
-  const rerender = () => render(root);
+  const rerender = () => {
+    window.dispatchEvent(new Event('gymlog:backup-changed')); // lets the shell update the tab's overdue dot
+    return render(root);
+  };
 
   root.querySelector('[data-act=export]').addEventListener('click', async () => {
     const saved = await saveFile(file);

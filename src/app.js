@@ -1,5 +1,6 @@
 // App shell: hash router, service worker, persistent storage and the update toast.
-import { openDB } from './db/db.js';
+import { openDB, getSettings, count } from './db/db.js';
+import { backupStatus } from './lib/backup.js';
 import { toast } from './ui.js';
 import * as today from './screens/today.js';
 import * as history from './screens/history.js';
@@ -36,6 +37,17 @@ async function route() {
   document.body.classList.toggle('no-tabs', NO_TABS.has(key));
   root.replaceChildren(view);
   window.scrollTo(0, 0);
+  markBackupTab();
+}
+
+/** Warning dot on the Backup tab while a backup is overdue (iOS web apps can't notify without a push server). */
+async function markBackupTab() {
+  try {
+    const status = backupStatus(await getSettings(), await count('sessions'), Date.now());
+    const tab = document.querySelector('#tabs a[data-tab=backup]');
+    tab.classList.toggle('alert', status.overdue);
+    tab.setAttribute('aria-label', status.overdue ? 'Backup, overdue' : 'Backup');
+  } catch { /* storage unavailable: no dot */ }
 }
 
 async function askPersist() {
@@ -57,6 +69,7 @@ function announceUpdate() {
 }
 
 window.addEventListener('hashchange', route);
+window.addEventListener('gymlog:backup-changed', markBackupTab);
 
 await openDB().catch((err) => console.error('IndexedDB failed to open', err));
 route();

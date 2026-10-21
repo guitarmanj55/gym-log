@@ -5,6 +5,7 @@ import { e1rm } from '../lib/e1rm.js';
 import { suggestNext } from '../lib/suggest.js';
 import { lastSessionSets, topSetOf } from '../lib/plan.js';
 import { weekStrip, shortDate, fmtSet, recentTopSets, nextTemplate } from '../lib/history.js';
+import { backupStatus } from '../lib/backup.js';
 import { unlockAudio } from '../device.js';
 import { esc, longDate, toast, fmtKg, versionLine } from '../ui.js';
 
@@ -59,6 +60,16 @@ export async function render(root) {
       </div>`;
   }
 
+  const backup = backupStatus(settings, all.finished.length, now);
+  const reminder = backup.overdue && !active ? `
+    <a class="banner warn" href="#backup">
+      <div class="dot"></div>
+      <div>
+        <div class="banner-title">${esc(backup.title)}</div>
+        <div class="banner-sub">${esc(backup.sub)} · tap to export</div>
+      </div>
+    </a>` : '';
+
   const strip = weekStrip(all.sessions.filter((s) => s.endedAt || s === active).map((s) => s.startedAt), now);
   const recent = recentTopSets(all.sets, 5);
 
@@ -68,6 +79,7 @@ export async function render(root) {
         <div class="date">${esc(longDate(now))}</div>
         <h1 class="title">Today</h1>
       </div>
+      ${reminder}
       ${card}
       <div class="stack">
         <div class="eyebrow">This week</div>
