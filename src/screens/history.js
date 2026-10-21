@@ -1,5 +1,6 @@
 // History: finished workouts by week, with search. Tap a workout to see every set.
 import { loadAll, discardSession } from '../db/workout.js';
+import { searchText } from '../lib/exercise.js';
 import { groupLabel, shortDate, fmtDuration, fmtSet, headlineSet, prSetIds, matchesQuery } from '../lib/history.js';
 import { esc, toast } from '../ui.js';
 
@@ -13,7 +14,7 @@ export async function render(root) {
   let prs = prSetIds(all.sets);
   const open = new Set();
 
-  const sessionText = (s) => [shortDate(s.startedAt), ...(all.bySession.get(s.id) || []).map((it) => it.exercise?.name || '')].join(' ');
+  const sessionText = (s) => [shortDate(s.startedAt), ...(all.bySession.get(s.id) || []).map((it) => searchText(it.exercise))].join(' ');
 
   function card(s) {
     const items = (all.bySession.get(s.id) || []).filter((it) => it.sets.length);

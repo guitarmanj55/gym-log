@@ -9,7 +9,7 @@ export function openDB() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
       const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = (e) => createStores(req.result, e.oldVersion);
+      req.onupgradeneeded = (e) => createStores(req.result, e.oldVersion, req.transaction);
       req.onsuccess = () => {
         const db = req.result;
         // Another tab opened a newer version: close so its upgrade can run, then reload.

@@ -3,14 +3,15 @@
 import { getSettings } from '../db/db.js';
 import {
   getActiveSession, getSessionDetail, getExerciseSets, listExercises, addExerciseToSession,
-  removeSessionExercise, logSet, updateSet, deleteSet, finishSession, discardSession,
+  removeSessionExercise, logSet, updateSet, deleteSet, finishSession, discardSession, updateExercise,
 } from '../db/workout.js';
 import { e1rm } from '../lib/e1rm.js';
 import { platesPerSide, floorToStep } from '../lib/plates.js';
 import { beats } from '../lib/suggest.js';
 import { lastSessionSets, topSetOf, planFromLast, remainingPlan, buildRows, insertIndex } from '../lib/plan.js';
 import { restFor, startRest, remainingSec, restProgress, extendRest, fmtClock } from '../lib/rest.js';
-import { EQUIPMENT } from '../db/schema.js';
+import { loadsPlates, barKgFor, startKgFor, detailLine, musclesLine } from '../lib/exercise.js';
+import { detailFields, formAttrs, readDetails, trackMuscleOrder } from './exercise-form.js';
 import { keepAwake, unlockAudio, beep } from '../device.js';
 import { esc, toast, fmtKg } from '../ui.js';
 
@@ -64,17 +65,14 @@ export async function render(root) {
   const history = {}; // exerciseId -> every set of that lift
   let editor = null;  // { key, type, weightKg, reps, toFailure, set?, planIndex? }
   let sheetOpen = detail.items.length === 0;
+  let editingExercise = false; // the sheet shows the current exercise's details form
   let busy = false;
 
   // ---------- derived data ----------
 
   const currentItem = () => detail.items.find((it) => it.id === st.current) || detail.items[0] || null;
   const setsOf = (it) => detail.sets.filter((s) => s.sessionExerciseId === it.id);
-  const isBarbell = (it) => (it.exercise?.equipment || 'barbell') === 'barbell';
-  const startKg = (it) => {
-    const eq = it.exercise?.equipment || 'barbell';
-    return eq === 'barbell' ? settings.barWeightKg : eq === 'bodyweight' ? 0 : 10;
-  };
+  const startKg = (it) => startKgFor(it.exercise, settings.barWeightKg);
   const lastSets = (it) => lastSessionSets(history[it.exerciseId] || [], session.id);
 
   async function prepare() {
@@ -158,6 +156,17 @@ export async function render(root) {
     return `<div class="wk-last">Last time · ${fmtKg(top.weightKg)} kg × ${top.reps} · e1RM ${Math.round(e1rm(top.weightKg, top.reps))} kg</div>`;
   }
 
+  function detailsLine(it) {
+    const ex = it.exercise;
+    const muscles = musclesLine(ex);
+    return `
+      <button type="button" class="ex-details" data-act="edit-ex" aria-label="Edit details for ${esc(ex?.name)}">
+        <span class="ex-line">${esc(detailLine(ex))}${muscles ? ` · <span class="muted">${esc(muscles)}</span>` : ''}</span>
+        ${ex?.setup ? `<span class="ex-setup">${esc(ex.setup)}</span>` : ''}
+        <span class="ex-edit">Edit</span>
+      </button>`;
+  }
+
   function rowLine(r) {
     const done = !!r.set;
     return `
@@ -187,11 +196,11 @@ export async function render(root) {
       }
     }
     let plates = '';
-    if (isBarbell(it)) {
-      const bar = settings.barWeightKg;
+    if (loadsPlates(it.exercise?.equipment)) {
+      const bar = barKgFor(it.exercise, settings.barWeightKg);
       const p = platesPerSide(w, bar, settings.plates);
       if (w < bar) plates = `Below the ${fmtKg(bar)} kg bar`;
-      else if (!p.perSide.length) plates = 'Empty bar';
+      else if (!p.perSide.length) plates = bar ? 'Empty bar' : 'No plates';
       else if (p.exact) plates = `Per side ${p.perSide.map(fmtKg).join(' · ')}`;
       else plates = `Closest ${fmtKg(p.loadedKg)} kg: per side ${p.perSide.map(fmtKg).join(' · ')}`;
     }
@@ -241,6 +250,7 @@ export async function render(root) {
     const rows = rowsOf(it);
     const next = detail.items[index + 1];
     return `
+      ${detailsLine(it)}
       ${lastLine(it)}
       <div class="sets">
         <div class="set-head"><span>SET</span><span>KG</span><span>REPS</span><span></span></div>
@@ -255,7 +265,25 @@ export async function render(root) {
         : `<button type="button" class="wk-next" data-act="open-sheet"><span>Add another exercise</span>${ICON.next}</button>`}`;
   }
 
+  function editSheet() {
+    const ex = currentItem()?.exercise;
+    if (!ex) return '';
+    return `
+      <div class="sheet-backdrop" data-act="close-sheet"></div>
+      <div class="sheet" role="dialog" aria-label="Exercise details">
+        <div class="sheet-head">
+          <div class="eyebrow">Exercise details</div>
+          <button type="button" class="text-btn" data-act="close-sheet">Cancel</button>
+        </div>
+        <form ${formAttrs(ex)} data-form="edit">
+          ${detailFields(ex, { open: true })}
+          <button type="submit" class="btn btn-primary">Save details</button>
+        </form>
+      </div>`;
+  }
+
   function sheet() {
+    if (editingExercise) return editSheet();
     if (!sheetOpen) return '';
     const counts = Object.fromEntries(detail.items.map((it) => [it.id, setsOf(it).length]));
     const cur = currentItem();
@@ -274,13 +302,10 @@ export async function render(root) {
             </button>
             ${counts[it.id] ? '' : `<button type="button" class="wk-icon" data-act="remove-exercise" data-se="${it.id}" aria-label="Remove ${esc(it.exercise?.name)}">${ICON.close}</button>`}
           </div>`).join('')}</div>` : ''}
-        <form class="add-form" data-form="add">
-          <input class="text-input" name="name" list="exercise-names" placeholder="Exercise name" autocomplete="off" autocapitalize="words" enterkeyhint="done" aria-label="Exercise name">
-          <datalist id="exercise-names">${exercises.map((e) => `<option value="${esc(e.name)}">`).join('')}</datalist>
-          <div class="equip" role="radiogroup" aria-label="Equipment">
-            ${EQUIPMENT.map((eq, i) => `<label class="equip-chip"><input type="radio" name="equipment" value="${eq}"${i === 0 ? ' checked' : ''}><span>${eq[0].toUpperCase()}${eq.slice(1)}</span></label>`).join('')}
-          </div>
-          <div class="note">Equipment only matters for new exercises. Barbell lifts show the plates per side.</div>
+        <form ${formAttrs()} data-form="add">
+          <div class="eyebrow">Add exercise</div>
+          ${detailFields({}, { names: exercises.map((e) => e.name) })}
+          <div class="note">Details only apply to new exercises; edit a saved one from its card. Bar and plate-loaded lifts show the plates per side.</div>
           <button type="submit" class="btn btn-primary">Add exercise</button>
         </form>
       </div>`;
@@ -367,7 +392,8 @@ export async function render(root) {
 
   const actions = {
     'open-sheet': () => { sheetOpen = true; draw(); },
-    'close-sheet': () => { sheetOpen = false; draw(); },
+    'close-sheet': () => { sheetOpen = false; editingExercise = false; draw(); },
+    'edit-ex': () => { editingExercise = true; draw(); },
     jump: async (el) => { st.current = el.dataset.se; sheetOpen = false; await refresh(); },
     next: async () => {
       const i = detail.items.indexOf(currentItem());
@@ -462,17 +488,24 @@ export async function render(root) {
     if (ev.target.dataset?.field) ev.target.select();
   });
 
+  trackMuscleOrder(root);
   root.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const form = ev.target;
-    if (form.dataset.form !== 'add' || busy) return;
+    if (!['add', 'edit'].includes(form.dataset.form) || busy) return;
     busy = true;
     try {
-      const se = await addExerciseToSession(session.id, form.elements.name.value, form.elements.equipment.value);
+      if (form.dataset.form === 'add') {
+        const se = await addExerciseToSession(session.id, readDetails(form));
+        st.current = se.id;
+        sheetOpen = false;
+      } else {
+        await updateExercise(currentItem().exercise, readDetails(form));
+        editingExercise = false;
+        toast('Details saved.');
+      }
       exercises = await listExercises();
-      st.current = se.id;
-      sheetOpen = false;
-      await refresh();
+      await refresh(editor?.key);
     } catch (err) {
       toast(err.message || String(err), 5000);
     } finally {

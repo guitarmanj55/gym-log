@@ -64,3 +64,18 @@ test('normaliseSettings fills missing rest times', () => {
 test('backupFileName', () => {
   assert.equal(backupFileName(new Date(2026, 9, 21).getTime()), 'gym-log-backup-2026-10-21.json');
 });
+
+test('schema 1 backups get exercise muscles from muscleGroup', () => {
+  const file = valid();
+  file.exercises.push({ id: 'e2', name: 'Fly', muscleGroup: 'Chest', createdAt: 1 }, { id: 'e3', name: 'Curl', muscleGroup: 'biceps', createdAt: 1 });
+  const out = migrateBackup(file);
+  assert.deepEqual(out.exercises.map((e) => [e.muscles, e.setup, 'muscleGroup' in e]), [
+    [undefined, undefined, false], [undefined, 'Chest', false], [['biceps'], undefined, false],
+  ]);
+});
+
+test('rejects a muscle list that is not a list', () => {
+  const file = { ...valid(), schema: BACKUP_SCHEMA };
+  file.exercises[0].muscles = 'quads';
+  assert.throws(() => migrateBackup(file), /bad muscle list/);
+});

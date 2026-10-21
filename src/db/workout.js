@@ -1,5 +1,6 @@
 // Workout data: sessions, the exercises in them and their sets. Built on the db.js wrapper.
 import { get, getAll, getAllByIndex, put, putMany, remove, removeMany } from './db.js';
+import { cleanDetails, withDetails } from '../lib/exercise.js';
 
 const uid = () => crypto.randomUUID();
 const byOrder = (a, b) => a.order - b.order;
@@ -89,14 +90,15 @@ export async function listExercises() {
 
 /**
  * Adds an exercise to a session by name, reusing an existing exercise with the same name
- * (any case). Returns the session exercise; if the lift is already in the session, that one.
+ * (any case); `details` (equipment, muscles...) only apply to a new one.
+ * Returns the session exercise; if the lift is already in the session, that one.
  */
-export async function addExerciseToSession(sessionId, name, equipment = 'barbell', now = Date.now()) {
-  const clean = name.trim().replace(/\s+/g, ' ');
-  if (!clean) throw new Error('Give the exercise a name.');
-  let exercise = (await getAll('exercises')).find((e) => e.name.toLowerCase() === clean.toLowerCase());
+export async function addExerciseToSession(sessionId, details, now = Date.now()) {
+  const clean = cleanDetails(details);
+  if (!clean.name) throw new Error('Give the exercise a name.');
+  let exercise = (await getAll('exercises')).find((e) => e.name.toLowerCase() === clean.name.toLowerCase());
   if (!exercise) {
-    exercise = { id: uid(), name: clean, equipment, createdAt: now };
+    exercise = { id: uid(), ...clean, createdAt: now };
     await put('exercises', exercise);
   }
   const current = await getAllByIndex('sessionExercises', 'sessionId', sessionId);
@@ -108,6 +110,15 @@ export async function addExerciseToSession(sessionId, name, equipment = 'barbell
   };
   await put('sessionExercises', se);
   return se;
+}
+
+/** Saves new details (and maybe a new name) for an exercise. Its sets and history stay with it. */
+export async function updateExercise(exercise, details) {
+  const next = withDetails(exercise, details);
+  if (!next.name) throw new Error('Give the exercise a name.');
+  const clash = (await getAll('exercises')).find((e) => e.id !== exercise.id && e.name.toLowerCase() === next.name.toLowerCase());
+  if (clash) throw new Error(`There's already an exercise called ${clash.name}.`);
+  return put('exercises', next);
 }
 
 /** Takes an exercise out of a session. Refuses if sets are logged against it. */

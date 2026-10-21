@@ -3,7 +3,10 @@ import { getAll } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
 import { prSetIds, fmtSet } from '../lib/history.js';
 import { RANGES, rangeStart, topSetPoints, changeLabel, liftStats, chartGeometry } from '../lib/progress.js';
-import { esc, fmtKg } from '../ui.js';
+import { detailLine, musclesLine } from '../lib/exercise.js';
+import { updateExercise } from '../db/workout.js';
+import { detailFields, formAttrs, readDetails, trackMuscleOrder } from './exercise-form.js';
+import { esc, fmtKg, toast } from '../ui.js';
 
 const LIFT_KEY = 'gymlog_lift';
 const RANGE_KEY = 'gymlog_range';
@@ -39,6 +42,7 @@ export async function render(root) {
   let lift = lifts.find((e) => e.id === fromHash) || lifts.find((e) => e.id === recall(LIFT_KEY)) || lifts[0];
   let range = RANGES.includes(recall(RANGE_KEY)) ? recall(RANGE_KEY) : '3M';
   let sheetOpen = false;
+  let editing = false;
 
   function chart(points, name) {
     if (!points.length) return `<div class="chart-empty">No top sets in this period.</div>`;
@@ -80,6 +84,11 @@ export async function render(root) {
           <h1 class="title">${esc(lift.name)}</h1>
           <button type="button" class="chip-btn change-lift" data-act="pick">Change lift ${CHEVRON}</button>
         </div>
+        <button type="button" class="ex-details" data-act="edit" aria-label="Edit details for ${esc(lift.name)}">
+          <span class="ex-line">${esc(detailLine(lift))}${musclesLine(lift) ? ` · <span class="muted">${esc(musclesLine(lift))}</span>` : ''}</span>
+          ${lift.setup ? `<span class="ex-setup">${esc(lift.setup)}</span>` : ''}
+          <span class="ex-edit">Edit</span>
+        </button>
         ${latest ? `
           <div class="e1rm-row">
             <div>
@@ -124,12 +133,21 @@ export async function render(root) {
               return `
                 <div class="sheet-row${e.id === lift.id ? ' current' : ''}">
                   <button type="button" class="sheet-jump" data-act="choose" data-id="${e.id}">
-                    <span>${esc(e.name)}</span>
+                    <span class="sheet-name">${esc(e.name)}<small>${esc(detailLine(e))}</small></span>
                     <span class="muted">${p ? `e1RM ${Math.round(p.e1rm)}` : ''}</span>
                   </button>
                 </div>`;
             }).join('')}
           </div>
+        </div>` : ''}
+      ${editing ? `
+        <div class="sheet-backdrop" data-act="close"></div>
+        <div class="sheet" role="dialog" aria-label="Exercise details">
+          <div class="sheet-head"><div class="eyebrow">Exercise details</div><button type="button" class="text-btn" data-act="close">Cancel</button></div>
+          <form ${formAttrs(lift)}>
+            ${detailFields(lift, { open: true })}
+            <button type="submit" class="btn btn-primary">Save details</button>
+          </form>
         </div>` : ''}`;
   }
 
@@ -138,7 +156,8 @@ export async function render(root) {
     if (!el) return;
     const act = el.dataset.act;
     if (act === 'pick') sheetOpen = true;
-    else if (act === 'close') sheetOpen = false;
+    else if (act === 'edit') editing = true;
+    else if (act === 'close') { sheetOpen = false; editing = false; }
     else if (act === 'range') range = el.dataset.range;
     else if (act === 'choose') {
       lift = lifts.find((e) => e.id === el.dataset.id) || lift;
@@ -147,6 +166,21 @@ export async function render(root) {
       window.scrollTo(0, 0);
     }
     draw();
+  });
+
+  trackMuscleOrder(root);
+  root.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    try {
+      const saved = await updateExercise(lift, readDetails(ev.target));
+      lifts[lifts.indexOf(lift)] = saved;
+      lift = saved;
+      editing = false;
+      toast('Details saved.');
+      draw();
+    } catch (err) {
+      toast(err.message || String(err), 5000);
+    }
   });
 
   draw();

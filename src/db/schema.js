@@ -1,19 +1,27 @@
 // IndexedDB schema for Gym Log. Plain JS, no dependencies.
 // Changing a store, index or field meaning needs a DB_VERSION bump and a migration in createStores().
+import { migrateExerciseV2 } from '../lib/exercise.js';
 
 export const DB_NAME = 'gymlog';
-export const DB_VERSION = 1;
-export const BACKUP_SCHEMA = 1;
+export const DB_VERSION = 2;
+export const BACKUP_SCHEMA = 2;
 
 export const SET_TYPES = ['warmup', 'top', 'backoff'];
-export const EQUIPMENT = ['barbell', 'dumbbell', 'cable', 'machine', 'bodyweight'];
+// Equipment, muscles and the other exercise detail lists live in src/lib/exercise.js.
 
 /**
  * @typedef {Object} Exercise
  * @property {string} id            crypto.randomUUID(); permanent, never reused
  * @property {string} name
- * @property {string=} equipment    one of EQUIPMENT
- * @property {string=} muscleGroup
+ * @property {string=} equipment    an EQUIPMENT id from lib/exercise.js; missing means barbell
+ * @property {string[]=} muscles    MUSCLES ids, primary first (schema 2; replaced muscleGroup)
+ * @property {string=} position     POSITIONS id: flat, incline, seated...
+ * @property {string=} grip         GRIPS id: overhand, underhand, neutral, mixed
+ * @property {string=} width        WIDTHS id: close, shoulder, wide
+ * @property {string=} attachment   ATTACHMENTS id, cable only
+ * @property {boolean=} unilateral  one arm or leg at a time
+ * @property {number=} barKg        empty bar or sled weight, plate-loaded equipment only
+ * @property {string=} setup        free text, e.g. "Seat 4, pad 2"
  * @property {number} createdAt     epoch ms
  *
  * @typedef {Object} Session
@@ -90,8 +98,11 @@ export const STORES = {
   settings: { keyPath: 'id', indexes: [] },
 };
 
-/** Called from indexedDB.open(...).onupgradeneeded. Add a step per DB_VERSION; never edit old steps. */
-export function createStores(db, oldVersion) {
+/**
+ * Called from indexedDB.open(...).onupgradeneeded with the upgrade transaction.
+ * Add a step per DB_VERSION; never edit old steps.
+ */
+export function createStores(db, oldVersion, tx) {
   if (oldVersion < 1) {
     for (const [name, def] of Object.entries(STORES)) {
       const store = db.createObjectStore(name, { keyPath: def.keyPath });
@@ -100,7 +111,17 @@ export function createStores(db, oldVersion) {
       }
     }
   }
-  // if (oldVersion < 2) { ...migration for DB_VERSION 2... }
+  if (oldVersion >= 1 && oldVersion < 2) {
+    // Exercise details: muscleGroup (free text, never set by the UI) becomes muscles.
+    const req = tx.objectStore('exercises').openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) return;
+      if ('muscleGroup' in cursor.value) cursor.update(migrateExerciseV2(cursor.value));
+      cursor.continue();
+    };
+  }
+  // if (oldVersion < 3) { ...migration for DB_VERSION 3... }
 }
 
 // ---------- Backups ----------
@@ -127,7 +148,8 @@ export function migrateBackup(file) {
 
   const data = { schema, exportedAt: file.exportedAt, settings: file.settings };
   for (const name of DATA_STORES) data[name] = Array.isArray(file[name]) ? file[name].map((r) => ({ ...r })) : [];
-  // if (data.schema < 2) { ...rewrite records for schema 2...; data.schema = 2; }
+  if (data.schema < 2) { data.exercises = data.exercises.map(migrateExerciseV2); data.schema = 2; }
+  // if (data.schema < 3) { ...rewrite records for schema 3...; data.schema = 3; }
 
   data.schema = BACKUP_SCHEMA;
   data.settings = normaliseSettings(data.settings);
@@ -152,6 +174,7 @@ export function validateBackup(data) {
   }
   for (const e of data.exercises) {
     if (typeof e.name !== 'string' || !e.name.trim()) fail('an exercise has no name.');
+    if (e.muscles !== undefined && !Array.isArray(e.muscles)) fail(`${e.name} has a bad muscle list.`);
   }
   for (const s of data.sessions) {
     if (!isNum(s.startedAt)) fail('a session has no start time.');
