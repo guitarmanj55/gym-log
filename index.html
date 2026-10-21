@@ -36,13 +36,16 @@
   --font-body:'Barlow', system-ui, -apple-system, sans-serif;
   --font-num:'Barlow Condensed', 'Barlow', system-ui, sans-serif;
   --safe-top:max(env(safe-area-inset-top), 20px);
-  --safe-bottom:env(safe-area-inset-bottom);
+  --safe-bottom:env(safe-area-inset-bottom, 0px);
+  /* Space under the tab bar: 28px on an iPhone 16 Pro (34px home-indicator inset), like the design and iOS tab bars. */
+  --tabs-bottom:max(calc(var(--safe-bottom) - 6px), 8px);
   color-scheme:dark;
 }
 
 /* ============ BASE ============ */
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
+html{background:var(--bg)}
 body{
   background:var(--bg);color:var(--text);font-family:var(--font-body);
   display:flex;flex-direction:column;overflow:hidden;
@@ -96,13 +99,13 @@ input{font:inherit}
 .switch[aria-checked="true"] span{background:var(--on-accent)}
 
 /* ============ TAB BAR ============ */
-#tabs{display:flex;padding:8px 12px calc(var(--safe-bottom) + 8px);border-top:1px solid var(--line);background:var(--bg)}
+#tabs{display:flex;padding:6px 12px var(--tabs-bottom);border-top:1px solid var(--line);background:var(--bg)}
 #tabs a{flex:1;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:12px;font-weight:500}
 #tabs a[aria-current="page"]{color:var(--accent);font-weight:600}
 #tabs svg{width:24px;height:24px}
 
 /* ============ TOAST ============ */
-#toast{position:fixed;left:16px;right:16px;bottom:calc(var(--safe-bottom) + 84px);margin:0 auto;max-width:420px;background:var(--raised);border:1px solid var(--line-strong);color:var(--text);border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.4;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:10}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(var(--tabs-bottom) + 70px);margin:0 auto;max-width:420px;background:var(--raised);border:1px solid var(--line-strong);color:var(--text);border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.4;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:10}
 #toast.show{opacity:1;transform:none}
 </style>
 </head>
@@ -132,8 +135,8 @@ input{font:inherit}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.1";
-var APP_WHATS_NEW = "the app shell, offline support and JSON backups";
+var APP_VERSION = "0.1.1";
+var APP_WHATS_NEW = "the tab bar now sits lower, like the iPhone's own tab bars";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>
