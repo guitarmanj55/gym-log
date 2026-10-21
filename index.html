@@ -66,6 +66,8 @@ input{font:inherit}
 .lead{font-size:16px;line-height:1.45;color:var(--text-2)}
 .note{font-size:13px;line-height:1.45;color:var(--muted)}
 .center{text-align:center}
+.diag-toggle{background:none;border:none;padding:12px 0;margin:-12px 0;text-align:left}
+.diag{margin:0;font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;user-select:text;-webkit-user-select:text}
 
 /* ============ BLOCKS ============ */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:14px}
@@ -136,8 +138,8 @@ input{font:inherit}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.1.2";
-var APP_WHATS_NEW = "the tab bar is pinned to the bottom of the screen, and updates now arrive on the next open";
+var APP_VERSION = "0.1.3";
+var APP_WHATS_NEW = "display info on the Backup screen (tap the version line) to help fix the tab bar";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>
