@@ -4,9 +4,11 @@ A personal strength-training tracker. Log warm-ups, one heavy top set and an opt
 
 Installable on iPhone from Safari (Add to Home Screen) and works offline. Data stays on the device; use the Backup screen to export it.
 
-## Run it
+**Live app:** https://guitarmanj55.github.io/gym-log/ (open in Safari on the iPhone, then Share > Add to Home Screen).
 
-It is a static site. Serve the folder and open http://localhost:8123:
+## Run it locally
+
+For development on the laptop only. It is a static site. Serve the folder and open http://localhost:8123:
 
 ```
 python -m http.server 8123
