@@ -1,5 +1,5 @@
 // Just enough of node:test and node:assert/strict to run the *.test.js files in a browser
-// (this laptop has no Node). Used by scripts/browser-tests.html only; not part of the app.
+// when Node isn't to hand (`node --test` is the usual way). Used by scripts/browser-tests.html only; not part of the app.
 
 export const results = [];
 

@@ -53,4 +53,4 @@ Tokens:
 Keep each step a small working slice that is deployed and tested on the phone.
 
 ## Testing
-Serve the folder (`python -m http.server 8123`) rather than opening the file, so the service worker runs. Click through every screen at phone width. Run `node --test` for the logic; without Node, open `scripts/browser-tests.html` on the local server (it runs the same files through `scripts/node-shim.js`, so add new test files to its `FILES` list).
+Serve the folder (`python -m http.server 8123`, using `C:\Users\OJacq\AppData\Local\Programs\Python\Python312\python.exe` since Python is not on PATH) rather than opening the file, so the service worker runs. Click through every screen at phone width. Run `node --test` for the logic (Node 24 is installed); as a fallback, open `scripts/browser-tests.html` on the local server (it runs the same files through `scripts/node-shim.js`, so add new test files to its `FILES` list).
