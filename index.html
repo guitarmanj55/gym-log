@@ -150,6 +150,38 @@ a.btn{text-decoration:none}
 .hist-sets b{font-size:11px;color:var(--muted);font-weight:700;margin-right:2px}
 .hist-card .text-btn{align-self:flex-start;margin:-6px 12px 6px}
 
+/* ============ LIFT PROGRESS ============ */
+.lift{gap:16px}
+.lift-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lift-head .title{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.change-lift{display:flex;align-items:center;gap:6px;flex:none}
+.e1rm-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.e1rm-big{display:flex;align-items:baseline;gap:6px;font-family:var(--font-num);font-size:68px;font-weight:700;line-height:1}
+.e1rm-big .unit{font-family:var(--font-body);font-size:22px;font-weight:500;color:var(--muted)}
+.change-pill{height:32px;padding:0 12px;border-radius:16px;background:#1F2A0E;color:var(--accent);font-size:14px;font-weight:600;display:flex;align-items:center;margin-bottom:10px;white-space:nowrap}
+.change-pill.down{background:var(--warn-bg);color:var(--warn)}
+.segmented{display:flex;gap:4px;background:var(--surface);border-radius:14px;padding:4px}
+.segmented button{flex:1;height:44px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-size:15px;font-weight:600}
+.segmented button[aria-pressed="true"]{background:var(--line);color:var(--text)}
+.chart{display:block;overflow:visible}
+.c-grid{stroke:var(--line);stroke-width:1}
+.c-text{fill:var(--muted);font-size:11px;font-family:var(--font-body)}
+.c-trend{stroke:#5A606B;stroke-width:1.5;stroke-dasharray:4 4}
+.c-line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.c-dot{fill:var(--accent)}
+.c-last{fill:var(--accent)}
+.chart-empty{height:150px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:15px}
+.tiles{display:flex;gap:10px}
+.tile{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:2px}
+.tile-label{font-size:12px;color:var(--muted)}
+.tile-val{font-family:var(--font-num);font-size:26px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;border-bottom:1px solid var(--line)}
+.th-row:last-child{border-bottom:none}
+.th-left{display:flex;align-items:center;gap:10px}
+.th-date{font-size:15px;color:var(--muted);width:52px}
+.th-set{font-size:17px;font-weight:600;white-space:nowrap}
+.th-row .muted{font-size:14px;white-space:nowrap}
+
 /* ============ ACTIVE WORKOUT ============ */
 .no-tabs #tabs{display:none}
 .no-tabs #screen{padding-bottom:var(--tabs-bottom)}
@@ -265,8 +297,8 @@ a.btn{text-decoration:none}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.3";
-var APP_WHATS_NEW = "Today shows what's up next, your week and recent top sets; History lists your workouts with PRs";
+var APP_VERSION = "0.4";
+var APP_WHATS_NEW = "the Lifts tab shows each lift's e1RM trend, stats and top-set history";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

@@ -37,7 +37,8 @@ export function groupLabel(ms, now) {
 
 /** "Mon 19 Oct" */
 export function shortDate(ms) {
-  return new Date(ms).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  // Some engines write "Sept"; the design uses three letters.
+  return new Date(ms).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace('Sept', 'Sep');
 }
 
 /** 64 minutes -> "1h 04". */
