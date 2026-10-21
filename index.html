@@ -110,6 +110,46 @@ input{font:inherit}
 .muted{color:var(--muted)}
 a.btn{text-decoration:none}
 
+/* ============ TODAY ============ */
+.kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.kv > :first-child{font-size:15px;color:var(--muted)}
+.kv > :last-child{font-size:18px;font-weight:600;text-align:right}
+.accent{color:var(--accent)}
+.week{display:flex;justify-content:space-between}
+.day{display:flex;flex-direction:column;align-items:center;gap:6px}
+.dot{width:34px;height:34px;border-radius:50%;border:1px solid var(--line)}
+.dot.on{background:var(--accent);border-color:var(--accent)}
+.day.today .dot{border:2px solid var(--accent)}
+.day-label{font-size:13px;color:var(--muted)}
+.day.today .day-label{color:var(--text);font-weight:600}
+.recent{display:flex;flex-direction:column}
+.recent .eyebrow{margin-bottom:4px}
+.recent-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-bottom:1px solid var(--line)}
+.recent-row:last-child{border-bottom:none}
+.recent-name{font-size:17px;font-weight:600}
+.recent-vals{display:flex;align-items:baseline;gap:10px;font-size:17px;font-weight:600;white-space:nowrap}
+.recent-vals .muted{font-size:14px;font-weight:500}
+
+/* ============ HISTORY ============ */
+.hist{gap:14px}
+.search{position:relative}
+.search svg{position:absolute;left:14px;top:14px;color:var(--muted);pointer-events:none}
+.search .text-input{height:48px;padding-left:44px;border-color:var(--line);background:var(--surface);font-size:16px;border-radius:12px}
+.search .text-input::-webkit-search-cancel-button{filter:invert(0.6)}
+.hist-list{display:flex;flex-direction:column;gap:18px}
+.hist-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column}
+.hist-main{display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:none;border:none;text-align:left;width:100%}
+.hist-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.hist-head .muted{font-size:14px;white-space:nowrap}
+.hist-title{font-size:17px;font-weight:600}
+.hist-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px}
+.hist-ex{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.hist-set{font-weight:600;white-space:nowrap}
+.pr{height:20px;padding:0 7px;border-radius:6px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;display:inline-flex;align-items:center}
+.hist-sets{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--text-2);margin:-2px 0 4px}
+.hist-sets b{font-size:11px;color:var(--muted);font-weight:700;margin-right:2px}
+.hist-card .text-btn{align-self:flex-start;margin:-6px 12px 6px}
+
 /* ============ ACTIVE WORKOUT ============ */
 .no-tabs #tabs{display:none}
 .no-tabs #screen{padding-bottom:var(--tabs-bottom)}
@@ -225,8 +265,8 @@ a.btn{text-decoration:none}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.2";
-var APP_WHATS_NEW = "log workouts. Tap Start workout on Today";
+var APP_VERSION = "0.3";
+var APP_WHATS_NEW = "Today shows what's up next, your week and recent top sets; History lists your workouts with PRs";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

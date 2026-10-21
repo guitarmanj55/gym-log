@@ -1,0 +1,95 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  weekStart, weekStrip, groupLabel, fmtDuration, fmtSet, headlineSet, prSetIds, recentTopSets, nextTemplate, matchesQuery,
+} from './history.js';
+
+const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();
+const NOW = at(2026, 10, 21); // Wednesday
+
+test('weekStart is Monday midnight', () => {
+  assert.equal(weekStart(NOW), new Date(2026, 9, 19).getTime());
+  assert.equal(weekStart(at(2026, 10, 19, 0)), new Date(2026, 9, 19).getTime());
+  assert.equal(weekStart(at(2026, 10, 25, 23)), new Date(2026, 9, 19).getTime()); // Sunday
+});
+
+test('weekStrip marks trained days and today', () => {
+  const strip = weekStrip([at(2026, 10, 19), at(2026, 10, 12)], NOW);
+  assert.equal(strip.map((d) => d.label).join(''), 'MTWTFSS');
+  assert.deepEqual(strip.map((d) => d.trained), [true, false, false, false, false, false, false]);
+  assert.deepEqual(strip.map((d) => d.isToday), [false, false, true, false, false, false, false]);
+});
+
+test('groupLabel', () => {
+  assert.equal(groupLabel(at(2026, 10, 19), NOW), 'This week');
+  assert.equal(groupLabel(at(2026, 10, 16), NOW), 'Last week');
+  assert.equal(groupLabel(at(2026, 10, 12), NOW), 'Last week');
+  assert.equal(groupLabel(at(2026, 10, 11), NOW), 'October 2026');
+  assert.equal(groupLabel(at(2026, 9, 30), NOW), 'September 2026');
+});
+
+test('fmtDuration', () => {
+  assert.equal(fmtDuration(64 * 60000), '1h 04');
+  assert.equal(fmtDuration(52 * 60000), '0h 52');
+  assert.equal(fmtDuration(-5), '0h 00');
+});
+
+test('fmtSet', () => {
+  assert.equal(fmtSet({ weightKg: 100, reps: 6 }, 'barbell'), '100 × 6');
+  assert.equal(fmtSet({ weightKg: 142.5, reps: 5 }), '142.5 × 5');
+  assert.equal(fmtSet({ weightKg: 10, reps: 6 }, 'bodyweight'), 'BW + 10 × 6');
+  assert.equal(fmtSet({ weightKg: 0, reps: 8 }, 'bodyweight'), 'BW × 8');
+});
+
+test('headlineSet prefers the top set, else the heaviest', () => {
+  const w = { type: 'warmup', weightKg: 60, reps: 8, completedAt: 1 };
+  const t = { type: 'top', weightKg: 100, reps: 6, completedAt: 2 };
+  const b = { type: 'backoff', weightKg: 110, reps: 3, completedAt: 3 };
+  assert.equal(headlineSet([w, t, b]), t);
+  assert.equal(headlineSet([w, b]), b);
+  assert.equal(headlineSet([]), null);
+});
+
+test('prSetIds: beats every earlier top set of that lift; first one is not a PR', () => {
+  const sets = [
+    { id: '1', exerciseId: 'sq', type: 'top', weightKg: 135, reps: 5, completedAt: 1 },
+    { id: '2', exerciseId: 'sq', type: 'top', weightKg: 140, reps: 5, completedAt: 2 },
+    { id: '3', exerciseId: 'sq', type: 'top', weightKg: 137.5, reps: 5, completedAt: 3 },
+    { id: '4', exerciseId: 'sq', type: 'backoff', weightKg: 200, reps: 5, completedAt: 4 },
+    { id: '5', exerciseId: 'bp', type: 'top', weightKg: 100, reps: 6, completedAt: 5 },
+    { id: '6', exerciseId: 'sq', type: 'top', weightKg: 140, reps: 5, completedAt: 6 }, // equal is not a PR
+  ];
+  assert.deepEqual([...prSetIds(sets)], ['2']);
+});
+
+test('recentTopSets: latest per lift, newest first', () => {
+  const sets = [
+    { id: 'a', exerciseId: 'sq', type: 'top', completedAt: 1 },
+    { id: 'b', exerciseId: 'bp', type: 'top', completedAt: 2 },
+    { id: 'c', exerciseId: 'sq', type: 'top', completedAt: 3 },
+    { id: 'd', exerciseId: 'dl', type: 'warmup', completedAt: 4 },
+  ];
+  assert.deepEqual(recentTopSets(sets).map((s) => s.id), ['c', 'b']);
+  assert.deepEqual(recentTopSets(sets, 1).map((s) => s.id), ['c']);
+});
+
+test('nextTemplate carries on a rotation', () => {
+  const s = (id, startedAt, ...exerciseIds) => ({ id, startedAt, exerciseIds });
+  assert.equal(nextTemplate([]), null);
+  assert.equal(nextTemplate([s('a1', 1, 'sq', 'bp')]), 'a1'); // one workout: repeat it
+  assert.equal(nextTemplate([s('a1', 1, 'sq'), s('a2', 2, 'sq')]), 'a2'); // always the same: repeat
+  assert.equal(nextTemplate([s('a', 1, 'sq'), s('b', 2, 'dl')]), 'a'); // A, B -> A
+  assert.equal(nextTemplate([s('a', 1, 'sq'), s('b', 2, 'dl'), s('a2', 3, 'sq')]), 'b'); // A, B, A -> B
+  assert.equal(nextTemplate([
+    s('a', 1, 'sq'), s('b', 2, 'dl'), s('c', 3, 'bp'), s('a2', 4, 'sq'), s('b2', 5, 'dl'), s('c2', 6, 'bp'),
+  ]), 'a2'); // A, B, C, A, B, C -> A
+  assert.equal(nextTemplate([s('a', 1, 'bp', 'sq'), s('a2', 2, 'sq', 'bp')]), 'a2'); // order doesn't matter
+  assert.equal(nextTemplate([s('a', 1, 'sq'), s('e', 2)]), 'a'); // empty sessions ignored
+});
+
+test('matchesQuery', () => {
+  assert.equal(matchesQuery('Mon 19 Oct Bench press Barbell row', 'bench'), true);
+  assert.equal(matchesQuery('Mon 19 Oct Bench press Barbell row', 'row oct'), true);
+  assert.equal(matchesQuery('Squat', 'bench'), false);
+  assert.equal(matchesQuery('Squat', '  '), true);
+});

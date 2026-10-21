@@ -24,13 +24,16 @@ export async function getSessionExercises(sessionId) {
   return out;
 }
 
-/** Resumes the session in progress, or starts one with the same exercises as the last finished session. */
-export async function startSession(now = Date.now()) {
+/**
+ * Resumes the session in progress, or starts one with the same exercises as `templateId`
+ * (default: the last finished session).
+ */
+export async function startSession(templateId, now = Date.now()) {
   const active = await getActiveSession();
   if (active) return active;
   const session = { id: uid(), startedAt: now };
-  const last = await getLastFinishedSession();
-  const template = last ? await getAllByIndex('sessionExercises', 'sessionId', last.id) : [];
+  const fromId = templateId || (await getLastFinishedSession())?.id;
+  const template = fromId ? await getAllByIndex('sessionExercises', 'sessionId', fromId) : [];
   await putMany([
     ['sessions', session],
     ...template.sort(byOrder).map((se, i) => ['sessionExercises', {
@@ -38,6 +41,31 @@ export async function startSession(now = Date.now()) {
     }]),
   ]);
   return session;
+}
+
+/**
+ * Every record, joined up for the Today and History screens. Fine for years of one person's
+ * training (a few thousand sets); add paging here if it ever gets slow.
+ * @returns {{exercises: Map, sessions: Array, finished: Array, sets: Array,
+ *   bySession: Map<string, Array<{se, exercise, sets}>>}}  finished is newest first
+ */
+export async function loadAll() {
+  const [exerciseList, sessions, sessionExercises, sets] = await Promise.all([
+    getAll('exercises'), getAll('sessions'), getAll('sessionExercises'), getAll('sets'),
+  ]);
+  const exercises = new Map(exerciseList.map((e) => [e.id, e]));
+  const setsBySe = new Map();
+  for (const s of sets.sort((a, b) => a.completedAt - b.completedAt)) {
+    if (!setsBySe.has(s.sessionExerciseId)) setsBySe.set(s.sessionExerciseId, []);
+    setsBySe.get(s.sessionExerciseId).push(s);
+  }
+  const bySession = new Map();
+  for (const se of sessionExercises.sort(byOrder)) {
+    if (!bySession.has(se.sessionId)) bySession.set(se.sessionId, []);
+    bySession.get(se.sessionId).push({ se, exercise: exercises.get(se.exerciseId), sets: setsBySe.get(se.id) || [] });
+  }
+  const finished = sessions.filter((s) => s.endedAt).sort((a, b) => b.startedAt - a.startedAt);
+  return { exercises, sessions, finished, sets, bySession };
 }
 
 /** Everything the workout screen needs: the session, its exercises (with `exercise`) and its sets. */
