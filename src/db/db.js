@@ -82,6 +82,16 @@ export async function remove(storeName, id) {
   await ok;
 }
 
+/** Deletes several records from one or more stores in one transaction: [[storeName, id], ...]. */
+export async function removeMany(entries) {
+  const names = [...new Set(entries.map(([n]) => n))];
+  if (!names.length) return;
+  const db = await openDB();
+  const tx = db.transaction(names, 'readwrite');
+  for (const [n, id] of entries) tx.objectStore(n).delete(id);
+  await finished(tx);
+}
+
 // ---------- Settings ----------
 
 export async function getSettings() {

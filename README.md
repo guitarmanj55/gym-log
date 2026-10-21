@@ -26,4 +26,4 @@ Regenerate the icons with `powershell -File scripts\make_icons.ps1`.
 
 ## Status
 
-Build steps 1 and 2: the app shell (offline, installable), the IndexedDB data layer, JSON backup export/import, and the pure logic for e1RM, plates and the "beat last time" suggestion. Today, History and Lifts are placeholders. See `CLAUDE.md` for the rules and build order, and `design/` for the screens.
+Build steps 1 to 3: the app shell (offline, installable), the IndexedDB data layer, JSON backups, and the Active workout screen (prefill from last time, steppers, rest timer, live e1RM, plates per side). Today is a start/resume card for now; History and Lifts are placeholders. See `CLAUDE.md` for the rules and build order, and `design/` for the screens.

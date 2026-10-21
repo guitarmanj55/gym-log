@@ -5,8 +5,10 @@ import * as today from './screens/today.js';
 import * as history from './screens/history.js';
 import * as lift from './screens/lift.js';
 import * as backup from './screens/backup.js';
+import * as active from './screens/active.js';
 
-const SCREENS = { today, history, lift, backup };
+const SCREENS = { today, history, lift, backup, active };
+const NO_TABS = new Set(['active']); // full-screen, like the design
 const DEFAULT_SCREEN = 'today';
 const VERSION_KEY = 'gymlog_version';
 
@@ -31,6 +33,7 @@ async function route() {
   }
   // A slower render from an earlier tap must not replace the current screen.
   if (id !== renderId) return;
+  document.body.classList.toggle('no-tabs', NO_TABS.has(key));
   root.replaceChildren(view);
   window.scrollTo(0, 0);
 }
