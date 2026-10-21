@@ -1,0 +1,7 @@
+.env
+node_modules/
+gym-log-backup-*.json
+*.backup.json
+.DS_Store
+Thumbs.db
+.claude/

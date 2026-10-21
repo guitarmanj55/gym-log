@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gym Log tests</title>
+<!-- Runs the node --test files in a browser. Serve the repo root and open /scripts/browser-tests.html. -->
+<script type="importmap">
+{ "imports": { "node:test": "./node-shim.js", "node:assert/strict": "./node-shim.js" } }
+</script>
+<style>
+body{font:15px/1.5 system-ui,sans-serif;background:#0E0F11;color:#F2F3F5;margin:0;padding:20px}
+.pass{color:#C8F54A}.fail{color:#F5B84A}pre{white-space:pre-wrap;color:#9EA3AD;margin:2px 0 8px 18px}
+</style>
+</head>
+<body>
+<h1 id="summary">Running…</h1>
+<div id="out"></div>
+<script type="module">
+import { results } from './node-shim.js';
+const FILES = [
+  '../src/lib/e1rm.test.js',
+  '../src/lib/plates.test.js',
+  '../src/lib/suggest.test.js',
+  '../src/lib/backup.test.js',
+  '../src/db/schema.test.js',
+];
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+for (const f of FILES) {
+  results.length = 0;
+  try { await import(f); } catch (err) { results.push(Promise.resolve({ name: 'load ' + f, ok: false, error: err })); }
+  const h = document.createElement('h3'); h.textContent = f.replace('../', ''); out.append(h);
+  for (const r of await Promise.all(results)) {
+    const d = document.createElement('div');
+    d.className = r.ok ? 'pass' : 'fail';
+    d.textContent = (r.ok ? '✓ ' : '✗ ') + r.name;
+    out.append(d);
+    if (r.ok) pass++; else { fail++; const p = document.createElement('pre'); p.textContent = r.error?.message || String(r.error); out.append(p); }
+  }
+}
+document.getElementById('summary').textContent = `${pass} passed, ${fail} failed`;
+document.title = fail ? 'FAIL' : 'PASS';
+</script>
+</body>
+</html>

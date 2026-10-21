@@ -1,0 +1,78 @@
+/* Gym Log service worker: works offline once opened online.
+   HTML, the manifest and JS modules are network-first so updates arrive as soon as
+   you're online; icons and fonts are cache-first. Bump CACHE on every release and
+   list every module in SHELL, or the app breaks offline. */
+var CACHE = "gymlog-v1";
+var SHELL = [
+  "./",
+  "index.html",
+  "manifest.webmanifest",
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+  "icons/apple-touch-icon.png",
+  "src/app.js",
+  "src/ui.js",
+  "src/db/schema.js",
+  "src/db/db.js",
+  "src/lib/backup.js",
+  "src/lib/e1rm.js",
+  "src/lib/plates.js",
+  "src/lib/suggest.js",
+  "src/screens/today.js",
+  "src/screens/history.js",
+  "src/screens/lift.js",
+  "src/screens/backup.js"
+];
+
+self.addEventListener("install", function(e){
+  e.waitUntil(caches.open(CACHE).then(function(cache){
+    return cache.addAll(SHELL);
+  }).then(function(){ return self.skipWaiting(); }));
+});
+
+self.addEventListener("activate", function(e){
+  e.waitUntil(caches.keys().then(function(keys){
+    return Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
+  }).then(function(){ return self.clients.claim(); }));
+});
+
+function cacheFirst(req){
+  return caches.match(req).then(function(hit){
+    return hit || fetch(req).then(function(res){
+      if(res.ok || res.type === "opaque"){ var copy = res.clone(); caches.open(CACHE).then(function(c){ c.put(req, copy); }); }
+      return res;
+    });
+  });
+}
+function fromCache(req){
+  return caches.match(req, {ignoreSearch: true}).then(function(hit){
+    return hit || (req.mode === "navigate" ? caches.match("index.html") : undefined);
+  });
+}
+/* Gym wifi is often slow rather than down, so after 3 s fall back to the cached
+   copy instead of waiting; the fetch still finishes and refreshes the cache. */
+function networkFirst(req){
+  var net = fetch(req).then(function(res){
+    if(res.ok){ var copy = res.clone(); caches.open(CACHE).then(function(c){ c.put(req, copy); }); }
+    return res;
+  });
+  var slow = new Promise(function(resolve){ setTimeout(resolve, 3000); }).then(function(){
+    return fromCache(req).then(function(hit){ return hit || net; });
+  });
+  return Promise.race([net, slow]).catch(function(){
+    return fromCache(req).then(function(hit){ return hit || Response.error(); });
+  });
+}
+
+self.addEventListener("fetch", function(e){
+  var req = e.request;
+  if(req.method !== "GET") return;
+  var url = new URL(req.url);
+  if(url.origin === location.origin){
+    var p = url.pathname;
+    if(req.mode === "navigate" || p.endsWith(".html") || p.endsWith(".webmanifest") || p.endsWith(".js")) e.respondWith(networkFirst(req));
+    else e.respondWith(cacheFirst(req));
+  } else if(url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com"){
+    e.respondWith(cacheFirst(req));
+  }
+});
