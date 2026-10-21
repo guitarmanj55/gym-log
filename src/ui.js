@@ -40,6 +40,45 @@ export function comingSoon(root, { date, title, body }) {
         <div class="eyebrow">Coming next</div>
         <div class="lead">${esc(body)}</div>
       </div>
-      <div class="note">Version ${esc(globalThis.APP_VERSION)}</div>
+      ${versionLine()}
     </div>`;
+  wireVersionLine(root);
+}
+
+/** "Version x · tap for display info", with a hidden readout under it. Call wireVersionLine after rendering. */
+export function versionLine() {
+  return `<button type="button" class="note diag-toggle" data-act="diag">Version ${esc(globalThis.APP_VERSION)} · tap for display info</button>
+    <pre class="note diag" hidden></pre>`;
+}
+
+export function wireVersionLine(root) {
+  root.querySelector('[data-act=diag]').addEventListener('click', () => {
+    const pre = root.querySelector('.diag');
+    pre.hidden = !pre.hidden;
+    if (!pre.hidden) pre.textContent = displayInfo();
+  });
+}
+
+/** Screen and safe-area measurements, for checking the layout on a real phone. */
+function displayInfo() {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+  document.body.append(probe);
+  const p = getComputedStyle(probe);
+  const inset = [p.paddingTop, p.paddingRight, p.paddingBottom, p.paddingLeft].map((v) => Math.round(parseFloat(v))).join(' / ');
+  probe.remove();
+  const tabs = document.getElementById('tabs');
+  const r = tabs.getBoundingClientRect();
+  const r1 = (v) => Math.round(v * 10) / 10;
+  return [
+    `standalone: ${navigator.standalone === true || matchMedia('(display-mode: standalone)').matches}`,
+    `screen: ${screen.width} x ${screen.height}`,
+    `window: ${innerWidth} x ${innerHeight}`,
+    `html client: ${document.documentElement.clientHeight}`,
+    `page height: ${document.documentElement.scrollHeight}`,
+    `visual viewport: ${r1(visualViewport?.height ?? 0)}`,
+    `safe area t/r/b/l: ${inset}`,
+    `tab bar: top ${r1(r.top)}, bottom ${r1(r.bottom)}, height ${r1(r.height)}`,
+    `tab bar padding bottom: ${getComputedStyle(tabs).paddingBottom}`,
+  ].join('\n');
 }

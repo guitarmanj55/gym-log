@@ -2,7 +2,7 @@
    HTML, the manifest and JS modules are network-first so updates arrive as soon as
    you're online; icons and fonts are cache-first. Bump CACHE on every release and
    list every module in SHELL, or the app breaks offline. */
-var CACHE = "gymlog-v4";
+var CACHE = "gymlog-v5";
 var SHELL = [
   "./",
   "index.html",
