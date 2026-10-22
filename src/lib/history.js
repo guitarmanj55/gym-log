@@ -41,6 +41,18 @@ export function shortDate(ms) {
   return new Date(ms).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace('Sept', 'Sep');
 }
 
+/** When a past day was, said the way people say it: "today", "yesterday", "Monday", "last Thursday", else "Thu 8 Oct". */
+export function relativeDay(ms, now) {
+  const midnight = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const days = Math.round((midnight(now) - midnight(ms)) / DAY);
+  const weekday = new Date(ms).toLocaleDateString('en-GB', { weekday: 'long' });
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days > 1 && days < 7) return weekday;
+  if (days === 7) return `last ${weekday}`;
+  return shortDate(ms);
+}
+
 /** 64 minutes -> "1h 04". */
 export function fmtDuration(ms) {
   const min = Math.max(0, Math.round(ms / 60000));

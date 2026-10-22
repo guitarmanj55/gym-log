@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  weekStart, weekStrip, groupLabel, fmtDuration, fmtSet, headlineSet, prSetIds, recentTopSets, nextTemplate, matchesQuery,
+  weekStart, weekStrip, groupLabel, relativeDay, fmtDuration, fmtSet, headlineSet, prSetIds, recentTopSets, nextTemplate, matchesQuery,
 } from './history.js';
 
 const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();
@@ -26,6 +26,15 @@ test('groupLabel', () => {
   assert.equal(groupLabel(at(2026, 10, 12), NOW), 'Last week');
   assert.equal(groupLabel(at(2026, 10, 11), NOW), 'October 2026');
   assert.equal(groupLabel(at(2026, 9, 30), NOW), 'September 2026');
+});
+
+test('relativeDay', () => {
+  assert.equal(relativeDay(at(2026, 10, 21, 7), NOW), 'today');
+  assert.equal(relativeDay(at(2026, 10, 20, 23), NOW), 'yesterday');
+  assert.equal(relativeDay(at(2026, 10, 19), NOW), 'Monday');
+  assert.equal(relativeDay(at(2026, 10, 15), NOW), 'Thursday');
+  assert.equal(relativeDay(at(2026, 10, 14), NOW), 'last Wednesday');
+  assert.equal(relativeDay(at(2026, 10, 8), NOW), 'Thu 8 Oct');
 });
 
 test('fmtDuration', () => {

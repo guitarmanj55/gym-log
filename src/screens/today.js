@@ -4,7 +4,7 @@ import { getSettings } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
 import { suggestNext } from '../lib/suggest.js';
 import { lastSessionSets, topSetOf } from '../lib/plan.js';
-import { weekStrip, shortDate, fmtSet, recentTopSets, nextTemplate } from '../lib/history.js';
+import { weekStrip, relativeDay, fmtSet, recentTopSets, nextTemplate } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
 import { unlockAudio } from '../device.js';
 import { esc, longDate, toast, fmtKg, versionLine } from '../ui.js';
@@ -50,7 +50,7 @@ export async function render(root) {
     }
     card = `
       <div class="card">
-        <div class="eyebrow">${template ? `Up next · like ${esc(shortDate(template.startedAt))}` : 'Get started'}</div>
+        <div class="eyebrow">${template ? `Up next · same as ${esc(relativeDay(template.startedAt, now))}` : 'Get started'}</div>
         ${first
           ? `<div class="up-next">${esc(first.exercise?.name)}</div>
              ${rows}
