@@ -32,8 +32,32 @@ test('plan repeats warm-ups and back-offs and beats the top set by one step', ()
   ]);
 });
 
-test('plan for a new lift is one top set at the start weight', () => {
-  assert.deepEqual(planFromLast([], { startKg: 20 }), [{ type: 'top', weightKg: 20, reps: 5 }]);
+test('plan for a new lift is a warm-up and two top sets at the start weight', () => {
+  assert.deepEqual(planFromLast([], { startKg: 20 }), [
+    { type: 'warmup', weightKg: 20, reps: 8 },
+    { type: 'top', weightKg: 20, reps: 5 },
+    { type: 'top', weightKg: 20, reps: 5 },
+  ]);
+});
+
+test('plan repeats several top sets, bumping only the best one, and keeps "to failure"', () => {
+  const last = [
+    set('a', 'warmup', 60, 8, 1),
+    set('a', 'top', 100, 6, 2, { toFailure: true }),
+    set('a', 'top', 100, 5, 3, { toFailure: true }),
+    set('a', 'top', 95, 5, 4),
+  ];
+  assert.deepEqual(planFromLast(last, { stepKg: 2.5 }), [
+    { type: 'warmup', weightKg: 60, reps: 8 },
+    { type: 'top', weightKg: 102.5, reps: 6, toFailure: true },
+    { type: 'top', weightKg: 100, reps: 5, toFailure: true },
+    { type: 'top', weightKg: 95, reps: 5 },
+  ]);
+});
+
+test('remainingPlan covers one planned top set per logged top set', () => {
+  const plan = [{ type: 'top', weightKg: 100, reps: 6 }, { type: 'top', weightKg: 100, reps: 5 }];
+  assert.deepEqual(remainingPlan(plan, [set('now', 'top', 100, 7, 1)]), [{ type: 'top', weightKg: 100, reps: 5 }]);
 });
 
 test('plan with no top set last time starts from the heaviest set', () => {
@@ -54,6 +78,7 @@ test('buildRows groups logged then planned by type', () => {
   const rows = buildRows(plan, logged);
   assert.deepEqual(rows.map((r) => `${r.type} ${r.weightKg} ${r.set ? 'done' : r.planIndex}`),
     ['warmup 60 done', 'warmup 100 0', 'top 142.5 done', 'backoff 120 1']);
+  assert.deepEqual(rows.map((r) => `${r.n}/${r.of}`), ['1/2', '2/2', '1/1', '1/1']);
 });
 
 test('insertIndex puts a new set after the others of its type', () => {

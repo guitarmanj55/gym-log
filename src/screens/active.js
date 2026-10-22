@@ -101,7 +101,7 @@ export async function render(root) {
     const row = rows.find((r) => r.key === key) || rows.find((r) => !r.set) || null;
     editor = row ? {
       key: row.key, type: row.type, weightKg: row.weightKg, reps: row.reps, toFailure: row.toFailure,
-      set: row.set, planIndex: row.planIndex,
+      set: row.set, planIndex: row.planIndex, n: row.n, of: row.of,
     } : null;
   }
 
@@ -171,8 +171,8 @@ export async function render(root) {
     const done = !!r.set;
     return `
       <div class="set-row${done ? ' done' : ''}">
-        <button type="button" class="set-main" data-act="focus" data-key="${r.key}" aria-label="Edit ${TYPE_LABEL[r.type]} ${fmtKg(r.weightKg)} kg for ${r.reps}">
-          <span class="badge">${TYPE_BADGE[r.type]}</span>
+        <button type="button" class="set-main" data-act="focus" data-key="${r.key}" aria-label="Edit ${TYPE_LABEL[r.type]}${r.of > 1 ? ` ${r.n}` : ''} ${fmtKg(r.weightKg)} kg for ${r.reps}">
+          <span class="badge">${TYPE_BADGE[r.type]}${r.of > 1 ? `<small>${r.n}</small>` : ''}</span>
           <span class="set-num">${fmtKg(r.weightKg)}</span>
           <span class="set-num">${r.reps}${r.toFailure ? '<span class="fail-mark" title="To failure">F</span>' : ''}</span>
         </button>
@@ -215,7 +215,7 @@ export async function render(root) {
     return `
       <div class="set-editor type-${e.type}">
         <div class="ed-top">
-          <div class="ed-badge">${TYPE_LABEL[e.type].toUpperCase()}${editing ? ' · LOGGED' : ''}</div>
+          <div class="ed-badge">${TYPE_LABEL[e.type].toUpperCase()}${e.of > 1 ? ` ${e.n} OF ${e.of}` : ''}${editing ? ' · LOGGED' : ''}</div>
           ${canFail ? `<button type="button" class="fail-btn" data-act="failure" aria-pressed="${!!e.toFailure}">${e.toFailure ? ICON.checkSmall : ''}To failure</button>` : ''}
         </div>
         <div class="stepper">
@@ -258,6 +258,7 @@ export async function render(root) {
       </div>
       <div class="add-sets">
         <button type="button" class="chip-btn" data-act="add-warmup">+ Warm-up</button>
+        <button type="button" class="chip-btn" data-act="add-top">+ Top set</button>
         <button type="button" class="chip-btn" data-act="add-backoff">+ Back-off</button>
       </div>
       ${next
@@ -366,6 +367,9 @@ export async function render(root) {
     if (ofType.length) {
       const ref = ofType.at(-1);
       row = { type, weightKg: ref.weightKg, reps: ref.reps };
+      if (ref.toFailure && type !== 'warmup') row.toFailure = true;
+    } else if (type === 'top') {
+      row = { type, weightKg: startKg(it), reps: 5 };
     } else if (type === 'backoff') {
       row = { type, weightKg: floorToStep((top?.weightKg ?? startKg(it)) * 0.85, settings.stepKg), reps: Math.max(top?.reps ?? 5, 5) + 3 };
     } else {
@@ -437,6 +441,7 @@ export async function render(root) {
       draw();
     },
     'add-warmup': () => addPlanned('warmup'),
+    'add-top': () => addPlanned('top'),
     'add-backoff': () => addPlanned('backoff'),
     'rest-add': () => { st.rest = { ...extendRest(st.rest, 30, Date.now()), alerted: false }; saveState(st); draw(); },
     'rest-skip': () => { st.rest = null; saveState(st); draw(); },
