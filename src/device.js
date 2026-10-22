@@ -43,21 +43,31 @@ export function unlockAudio() {
   src.start(0);
 }
 
-/** Three short high beeps. */
-export function beep() {
+/** Plays [delay s, frequency Hz, length s] notes. */
+function notes(list, type = 'sine') {
   if (!ctx) return;
   if (ctx.state !== 'running') ctx.resume().catch(() => {});
   const t0 = ctx.currentTime + 0.05;
-  for (const d of [0, 0.28, 0.56]) {
+  for (const [d, freq, len] of list) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 880;
+    osc.type = type;
+    osc.frequency.value = freq;
     gain.gain.setValueAtTime(0.0001, t0 + d);
     gain.gain.exponentialRampToValueAtTime(0.7, t0 + d + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + d + len);
     osc.connect(gain).connect(ctx.destination);
     osc.start(t0 + d);
-    osc.stop(t0 + d + 0.22);
+    osc.stop(t0 + d + len + 0.02);
   }
+}
+
+/** Three short high beeps. */
+export function beep() {
+  notes([[0, 880, 0.2], [0.28, 880, 0.2], [0.56, 880, 0.2]]);
+}
+
+/** A rising four-note fanfare for a new PR (C E G C). */
+export function fanfare() {
+  notes([[0, 523, 0.14], [0.12, 659, 0.14], [0.24, 784, 0.14], [0.36, 1047, 0.5]], 'triangle');
 }

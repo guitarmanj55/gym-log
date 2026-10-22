@@ -35,7 +35,10 @@ export async function render(root) {
               ${expanded ? `<div class="hist-sets">${it.sets.map((x) => `<span><b>${BADGE[x.type]}</b> ${fmtSet(x, it.exercise?.equipment)}${x.toFailure ? ' F' : ''}</span>`).join('')}</div>` : ''}`;
           }).join('')}
         </button>
-        ${expanded ? `<button type="button" class="text-btn danger" data-act="delete" data-id="${s.id}">Delete this workout</button>` : ''}
+        ${expanded ? `<div class="hist-actions">
+          <a class="text-btn" href="#summary/${s.id}">Summary &amp; share</a>
+          <button type="button" class="text-btn danger" data-act="delete" data-id="${s.id}">Delete this workout</button>
+        </div>` : ''}
       </div>`;
   }
 

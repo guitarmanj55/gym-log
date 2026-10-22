@@ -129,6 +129,12 @@ a.btn{text-decoration:none}
 .recent-name{font-size:17px;font-weight:600}
 .recent-vals{display:flex;align-items:baseline;gap:10px;font-size:17px;font-weight:600;white-space:nowrap}
 .recent-vals .muted{font-size:14px;font-weight:500}
+.muscles{display:flex;flex-direction:column;gap:8px}
+.muscle-row{display:grid;grid-template-columns:110px 1fr 36px;align-items:center;gap:10px;min-height:24px}
+.muscle-name{font-size:15px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.muscle-track{height:8px;border-radius:4px;background:var(--surface)}
+.muscle-bar{height:8px;border-radius:4px;background:var(--accent);min-width:4px}
+.muscle-n{font-family:var(--font-num);font-size:20px;font-weight:700;text-align:right}
 
 /* ============ HISTORY ============ */
 .hist{gap:14px}
@@ -148,7 +154,8 @@ a.btn{text-decoration:none}
 .pr{height:20px;padding:0 7px;border-radius:6px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;display:inline-flex;align-items:center}
 .hist-sets{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--text-2);margin:-2px 0 4px}
 .hist-sets b{font-size:11px;color:var(--muted);font-weight:700;margin-right:2px}
-.hist-card .text-btn{align-self:flex-start;margin:-6px 12px 6px}
+.hist-actions{display:flex;justify-content:space-between;margin:-6px 12px 6px}
+.hist-actions a.text-btn{display:flex;align-items:center;color:var(--accent)}
 
 /* ============ LIFT PROGRESS ============ */
 .lift{gap:16px}
@@ -293,6 +300,16 @@ a.banner{text-decoration:none;color:inherit}
 /* ============ TOAST ============ */
 #toast{position:fixed;left:16px;right:16px;bottom:calc(var(--tabs-bottom) + 70px);margin:0 auto;max-width:420px;background:var(--raised);border:1px solid var(--line-strong);color:var(--text);border-radius:14px;padding:14px 16px;font-size:15px;line-height:1.4;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;z-index:10}
 #toast.show{opacity:1;transform:none}
+
+/* ============ PR FLASH ============ */
+#flash{position:fixed;left:16px;right:16px;top:calc(var(--safe-top) + 8px);margin:0 auto;max-width:420px;z-index:30;background:var(--accent);color:var(--on-accent);border-radius:18px;padding:16px 18px;box-shadow:0 10px 30px rgba(0,0,0,.5);cursor:pointer}
+#flash[hidden]{display:none}
+#flash.show{animation:flash-pop .45s cubic-bezier(.2,1.4,.4,1)}
+.flash-title{font-family:var(--font-num);font-size:40px;font-weight:700;line-height:1;letter-spacing:0.02em}
+.flash-sub{font-size:16px;font-weight:600;margin-top:4px}
+@keyframes flash-pop{from{opacity:0;transform:translateY(-12px) scale(.9)}}
+.pr-mark{font-family:var(--font-body);font-size:11px;font-weight:700;color:var(--on-accent);background:var(--accent);border-radius:5px;padding:1px 5px;margin-left:6px;vertical-align:super}
+@media (prefers-reduced-motion:reduce){#flash.show{animation:none}}
 </style>
 </head>
 <body>
@@ -318,11 +335,12 @@ a.banner{text-decoration:none;color:inherit}
 </nav>
 
 <div id="toast" role="status"></div>
+<div id="flash" role="alert" hidden></div>
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.7.1";
-var APP_WHATS_NEW = "Up next now says which workout it repeats in plain words (same as yesterday, Monday, last Thursday)";
+var APP_VERSION = "0.8";
+var APP_WHATS_NEW = "a NEW PR banner and sound, hard sets per muscle and lifts not trained lately on Today, and a summary you can share when you finish";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

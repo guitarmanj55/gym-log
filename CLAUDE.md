@@ -29,7 +29,8 @@ e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 - `src/db/schema.js` stores, indexes, defaults, backup shape and migrations
 - `src/db/` the IndexedDB wrapper (open, get, put, query, export, import)
 - `src/lib/` pure logic and its tests
-- `src/screens/` one module per screen (today, active, lift, history, backup)
+- `src/screens/` one module per screen (today, active, lift, history, backup, summary)
+- `src/lib/feedback.js` PRs as they're logged, hard sets per muscle this week, lifts not trained lately, the workout summary
 - `sw.js`, `manifest.webmanifest`, `icons/`
 - `design/` the approved screens, exported as images or PDF
 

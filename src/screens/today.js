@@ -6,6 +6,7 @@ import { suggestNext } from '../lib/suggest.js';
 import { lastSessionSets, topSetOf } from '../lib/plan.js';
 import { weekStrip, relativeDay, fmtSet, recentTopSets, nextTemplate } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
+import { weeklyMuscleSets, fmtSetCount, staleLifts } from '../lib/feedback.js';
 import { unlockAudio } from '../device.js';
 import { esc, longDate, toast, fmtKg, versionLine } from '../ui.js';
 
@@ -72,6 +73,34 @@ export async function render(root) {
 
   const strip = weekStrip(all.sessions.filter((s) => s.endedAt || s === active).map((s) => s.startedAt), now);
   const recent = recentTopSets(all.sets, 5);
+  const muscles = weeklyMuscleSets(all.sets, all.exercises, now);
+  const most = muscles.rows[0]?.sets || 1;
+  const stale = staleLifts(all.sets, all.exercises, now).slice(0, 4);
+
+  const muscleBlock = muscles.rows.length || muscles.unassigned ? `
+    <div class="stack">
+      <div class="eyebrow">Hard sets this week</div>
+      ${muscles.rows.length ? `<div class="muscles">
+        ${muscles.rows.map((r) => `
+          <div class="muscle-row">
+            <div class="muscle-name">${esc(r.label)}</div>
+            <div class="muscle-track"><div class="muscle-bar" style="width:${Math.round((r.sets / most) * 100)}%"></div></div>
+            <div class="muscle-n">${fmtSetCount(r.sets)}</div>
+          </div>`).join('')}
+      </div>` : ''}
+      <div class="note">Top and back-off sets. A lift's other muscles count half a set.${muscles.unassigned
+        ? ` ${plural(muscles.unassigned, 'set')} on lifts with no target muscles; add them from the lift's details.` : ''}</div>
+    </div>` : '';
+
+  const staleBlock = stale.length ? `
+    <div class="recent">
+      <div class="eyebrow">Not trained lately</div>
+      ${stale.map((x) => `
+        <a class="recent-row" href="#lift/${esc(x.exercise.id)}">
+          <div class="recent-name">${esc(x.exercise.name)}</div>
+          <div class="recent-vals"><span class="muted">${x.days} days ago</span></div>
+        </a>`).join('')}
+    </div>` : '';
 
   root.innerHTML = `
     <div class="screen today">
@@ -91,6 +120,8 @@ export async function render(root) {
             </div>`).join('')}
         </div>
       </div>
+      ${muscleBlock}
+      ${staleBlock}
       ${recent.length ? `
         <div class="recent">
           <div class="eyebrow">Recent top sets</div>

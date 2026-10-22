@@ -7,8 +7,9 @@ import * as history from './screens/history.js';
 import * as lift from './screens/lift.js';
 import * as backup from './screens/backup.js';
 import * as active from './screens/active.js';
+import * as summary from './screens/summary.js';
 
-const SCREENS = { today, history, lift, backup, active };
+const SCREENS = { today, history, lift, backup, active, summary };
 const NO_TABS = new Set(['active']); // full-screen, like the design
 const DEFAULT_SCREEN = 'today';
 const VERSION_KEY = 'gymlog_version';

@@ -12,6 +12,20 @@ export function toast(message, ms = 3000) {
   toastTimer = setTimeout(() => el.classList.remove('show'), ms);
 }
 
+let flashTimer;
+/** The big accent banner at the top of the screen, for a new PR. Tap to dismiss. */
+export function flash(title, sub, ms = 4500) {
+  const el = document.getElementById('flash');
+  el.innerHTML = `<div class="flash-title">${esc(title)}</div><div class="flash-sub">${esc(sub)}</div>`;
+  el.hidden = false;
+  el.classList.remove('show');
+  void el.offsetWidth; // restart the animation for back-to-back PRs
+  el.classList.add('show');
+  el.onclick = () => { el.hidden = true; };
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { el.hidden = true; }, ms);
+}
+
 /** "Wednesday 21 October" */
 export function longDate(ms = Date.now()) {
   return new Date(ms).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });

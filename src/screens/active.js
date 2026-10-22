@@ -6,14 +6,16 @@ import {
   removeSessionExercise, logSet, updateSet, deleteSet, finishSession, discardSession, updateExercise,
 } from '../db/workout.js';
 import { e1rm } from '../lib/e1rm.js';
+import { prSetIds } from '../lib/history.js';
+import { prFor } from '../lib/feedback.js';
 import { platesPerSide, floorToStep } from '../lib/plates.js';
 import { beats } from '../lib/suggest.js';
 import { lastSessionSets, topSetOf, planFromLast, remainingPlan, buildRows, insertIndex } from '../lib/plan.js';
 import { restFor, startRest, remainingSec, restProgress, extendRest, fmtClock } from '../lib/rest.js';
 import { loadsPlates, barKgFor, startKgFor, detailLine, musclesLine } from '../lib/exercise.js';
 import { detailFields, formAttrs, readDetails, trackMuscleOrder } from './exercise-form.js';
-import { keepAwake, unlockAudio, beep } from '../device.js';
-import { esc, toast, fmtKg } from '../ui.js';
+import { keepAwake, unlockAudio, beep, fanfare } from '../device.js';
+import { esc, toast, flash, fmtKg } from '../ui.js';
 
 // Per-workout screen state that should survive a reload: current exercise, edited plans, rest timer.
 const STATE_KEY = 'gymlog_workout';
@@ -74,6 +76,8 @@ export async function render(root) {
   const setsOf = (it) => detail.sets.filter((s) => s.sessionExerciseId === it.id);
   const startKg = (it) => startKgFor(it.exercise, settings.barWeightKg);
   const lastSets = (it) => lastSessionSets(history[it.exerciseId] || [], session.id);
+  // Every set of the lift: earlier sessions from `history`, this one from `detail` (always current).
+  const allSetsOf = (it) => [...(history[it.exerciseId] || []).filter((s) => s.sessionId !== session.id), ...setsOf(it)];
 
   async function prepare() {
     const it = currentItem();
@@ -167,14 +171,15 @@ export async function render(root) {
       </button>`;
   }
 
-  function rowLine(r) {
+  function rowLine(r, prs) {
     const done = !!r.set;
+    const pr = done && prs.has(r.set.id) ? '<span class="pr-mark">PR</span>' : '';
     return `
       <div class="set-row${done ? ' done' : ''}">
         <button type="button" class="set-main" data-act="focus" data-key="${r.key}" aria-label="Edit ${TYPE_LABEL[r.type]}${r.of > 1 ? ` ${r.n}` : ''} ${fmtKg(r.weightKg)} kg for ${r.reps}">
           <span class="badge">${TYPE_BADGE[r.type]}${r.of > 1 ? `<small>${r.n}</small>` : ''}</span>
           <span class="set-num">${fmtKg(r.weightKg)}</span>
-          <span class="set-num">${r.reps}${r.toFailure ? '<span class="fail-mark" title="To failure">F</span>' : ''}</span>
+          <span class="set-num">${r.reps}${r.toFailure ? '<span class="fail-mark" title="To failure">F</span>' : ''}${pr}</span>
         </button>
         ${done
           ? `<span class="tick done" role="img" aria-label="Logged">${ICON.check}</span>`
@@ -248,13 +253,14 @@ export async function render(root) {
         </div>`;
     }
     const rows = rowsOf(it);
+    const prs = prSetIds(allSetsOf(it));
     const next = detail.items[index + 1];
     return `
       ${detailsLine(it)}
       ${lastLine(it)}
       <div class="sets">
         <div class="set-head"><span>SET</span><span>KG</span><span>REPS</span><span></span></div>
-        ${rows.map((r) => (editor && r.key === editor.key ? editorCard(it) : rowLine(r))).join('')}
+        ${rows.map((r) => (editor && r.key === editor.key ? editorCard(it) : rowLine(r, prs))).join('')}
       </div>
       <div class="add-sets">
         <button type="button" class="chip-btn" data-act="add-warmup">+ Warm-up</button>
@@ -347,12 +353,20 @@ export async function render(root) {
 
   async function log(values) {
     const it = currentItem();
+    const earlier = allSetsOf(it);
     const set = await logSet(it, values);
     if (values.planIndex !== undefined) st.plans[it.id].splice(values.planIndex, 1);
     startRestFor(values.type);
     if (values.type === 'top') {
+      const pr = prFor(set, earlier);
       const last = topSetOf(lastSets(it));
-      if (last && beats(set, last)) toast(`Beat last time: ${fmtKg(last.weightKg)} × ${last.reps} → ${fmtKg(set.weightKg)} × ${set.reps}`);
+      if (pr) {
+        // The Log tap is a user gesture, so iOS lets the sound play.
+        fanfare();
+        flash('NEW PR', `${it.exercise?.name || 'This lift'} · e1RM ${Math.round(pr.e1rm)} kg (+${fmtKg(Math.round(pr.gain * 10) / 10)} on your best)`);
+      } else if (last && beats(set, last)) {
+        toast(`Beat last time: ${fmtKg(last.weightKg)} × ${last.reps} → ${fmtKg(set.weightKg)} × ${set.reps}`);
+      }
     }
     await refresh();
   }
@@ -450,13 +464,14 @@ export async function render(root) {
         if (!confirm('No sets logged. Discard this workout?')) return;
         await discardSession(session.id);
         toast('Workout discarded.');
-      } else {
-        if (!confirm(`Finish this workout? ${detail.sets.length} set${detail.sets.length > 1 ? 's' : ''} logged.`)) return;
-        await finishSession(session.id);
-        toast('Workout saved.');
+        clearWorkoutState();
+        location.hash = '#today';
+        return;
       }
+      if (!confirm(`Finish this workout? ${detail.sets.length} set${detail.sets.length > 1 ? 's' : ''} logged.`)) return;
+      await finishSession(session.id);
       clearWorkoutState();
-      location.hash = '#today';
+      location.hash = `#summary/${session.id}`;
     },
   };
 
