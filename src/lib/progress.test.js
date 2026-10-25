@@ -75,3 +75,15 @@ test('chartGeometry with one point centres it', () => {
   assert.equal(g.trend, null);
   assert.equal(g.xLabels.length, 1);
 });
+
+import { stallInfo } from './progress.js';
+
+const pts = (...vals) => vals.map((e1rm, i) => ({ t: i * 1000, e1rm }));
+
+test('stallInfo counts sessions since the best e1RM', () => {
+  assert.equal(stallInfo(pts(100, 102, 101)), null); // too little history
+  assert.deepEqual(stallInfo(pts(100, 105, 104, 105.2, 103)), { sessions: 3, best: 105, stalled: true });
+  assert.deepEqual(stallInfo(pts(100, 105, 104, 103, 106)), { sessions: 0, best: 106, stalled: false });
+  assert.deepEqual(stallInfo(pts(100, 105, 104, 103)), { sessions: 2, best: 105, stalled: false });
+  assert.equal(stallInfo(pts(100, 105, 104, 103, 102), 4)?.stalled, false);
+});

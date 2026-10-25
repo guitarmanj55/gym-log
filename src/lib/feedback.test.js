@@ -99,3 +99,19 @@ test('fmtChange', () => {
   assert.equal(fmtChange(3), '+3');
   assert.equal(fmtChange(-2), '−2');
 });
+
+import { stalledLifts } from './feedback.js';
+
+test('stalledLifts flags lifts with no new best for 3 sessions, recent ones only', () => {
+  const day = 24 * 60 * 60 * 1000;
+  const NOW = 100 * day;
+  const top = (ex, i, kg, reps = 5, daysAgo = 0) => ({ id: `${ex}${i}`, exerciseId: ex, sessionId: `${ex}s${i}`, type: 'top', weightKg: kg, reps, completedAt: NOW - daysAgo * day });
+  const exercises = new Map([['a', { id: 'a', name: 'Bench' }], ['b', { id: 'b', name: 'Squat' }], ['c', { id: 'c', name: 'Row' }]]);
+  const sets = [
+    top('a', 1, 100, 5, 30), top('a', 2, 105, 5, 23), top('a', 3, 100, 5, 16), top('a', 4, 100, 5, 9), top('a', 5, 100, 5, 2), // stalled
+    top('b', 1, 100, 5, 30), top('b', 2, 105, 5, 23), top('b', 3, 105, 6, 16), top('b', 4, 110, 5, 9), top('b', 5, 110, 6, 2), // progressing
+    top('c', 1, 60, 5, 90), top('c', 2, 65, 5, 83), top('c', 3, 60, 5, 76), top('c', 4, 60, 5, 69), top('c', 5, 60, 5, 62), // stalled but long ago
+  ];
+  const out = stalledLifts(sets, exercises, NOW);
+  assert.deepEqual(out.map((x) => [x.exercise.name, x.sessions]), [['Bench', 3]]);
+});

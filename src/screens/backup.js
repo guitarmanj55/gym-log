@@ -167,7 +167,7 @@ export async function render(root) {
     const copies = await listBackups();
     restoreList.innerHTML = copies.length ? copies.map((c) => `
       <div class="list-row">
-        <div><div>${esc(whenText(c.at))}</div><div class="note">${c.sessions} session${c.sessions === 1 ? '' : 's'} · ${fmtBytes(c.bytes)}</div></div>
+        <div><div>${esc(whenText(c.at))}</div><div class="note">${c.sessions} session${c.sessions === 1 ? '' : 's'} · ${c.sets ?? 0} sets · ${fmtBytes(c.bytes)}</div></div>
         <button type="button" class="text-btn" data-restore-id="${esc(c.id)}" data-when="${esc(whenText(c.at))}">Restore</button>
       </div>`).join('') : '<div class="list-row"><div>No copies yet</div></div>';
   });
@@ -180,7 +180,14 @@ export async function render(root) {
   });
 
   async function restore(id) {
-    const result = await importBackup(await fetchBackup(id));
+    const copy = await fetchBackup(id);
+    // Keep what is on this phone as its own cloud copy first, so a restore never loses anything.
+    if (cloud.key && sessions) {
+      await backupNow({ force: true }).catch(() => {
+        if (!confirm('Could not save the current data to the cloud first. Restore anyway?')) throw new Error('Restore cancelled.');
+      });
+    }
+    const result = await importBackup(copy);
     toast(`Restored ${result.sessions} sessions and ${result.sets} sets.`);
     await markBackedUp();
     rerender();

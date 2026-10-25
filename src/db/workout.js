@@ -1,6 +1,7 @@
 // Workout data: saved workouts, sessions, the exercises in them and their sets. Built on the db.js wrapper.
 import { get, getAll, getAllByIndex, put, putMany, remove, removeMany } from './db.js';
 import { cleanDetails, withDetails } from '../lib/exercise.js';
+import { shiftDays } from '../lib/history.js';
 
 const uid = () => crypto.randomUUID();
 const byOrder = (a, b) => a.order - b.order;
@@ -206,5 +207,17 @@ export async function discardSession(sessionId) {
     ['sessions', sessionId],
     ...items.map((se) => ['sessionExercises', se.id]),
     ...sets.map((s) => ['sets', s.id]),
+  ]);
+}
+
+/** Moves a session, and all its sets, by whole days (keeping times of day). Fixes a workout logged on the wrong day. */
+export async function moveSession(sessionId, days) {
+  if (!days) return;
+  const [session, sets] = await Promise.all([get('sessions', sessionId), getAllByIndex('sets', 'sessionId', sessionId)]);
+  const next = { ...session, startedAt: shiftDays(session.startedAt, days) };
+  if (session.endedAt) next.endedAt = shiftDays(session.endedAt, days);
+  await putMany([
+    ['sessions', next],
+    ...sets.map((s) => ['sets', { ...s, completedAt: shiftDays(s.completedAt, days) }]),
   ]);
 }

@@ -5,7 +5,7 @@ import { getSettings } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
 import { weekStrip, relativeDay, fmtSet, recentTopSets } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
-import { weeklyMuscleSets, fmtSetCount, staleLifts } from '../lib/feedback.js';
+import { weeklyMuscleSets, fmtSetCount, staleLifts, stalledLifts } from '../lib/feedback.js';
 import { unlockAudio } from '../device.js';
 import { esc, longDate, toast, versionLine } from '../ui.js';
 
@@ -77,6 +77,7 @@ export async function render(root) {
   const muscles = weeklyMuscleSets(all.sets, all.exercises, now);
   const most = muscles.rows[0]?.sets || 1;
   const stale = staleLifts(all.sets, all.exercises, now).slice(0, 4);
+  const stalled = stalledLifts(all.sets, all.exercises, now).slice(0, 4);
 
   const muscleBlock = muscles.rows.length || muscles.unassigned ? `
     <div class="stack">
@@ -103,6 +104,17 @@ export async function render(root) {
         </a>`).join('')}
     </div>` : '';
 
+  const stalledBlock = stalled.length ? `
+    <div class="recent">
+      <div class="eyebrow">No new best lately</div>
+      ${stalled.map((x) => `
+        <a class="recent-row" href="#lift/${esc(x.exercise.id)}">
+          <div class="recent-name">${esc(x.exercise.name)}</div>
+          <div class="recent-vals"><span class="stall">Stalled</span><span class="muted">${x.sessions} sessions</span></div>
+        </a>`).join('')}
+      <div class="note">e1RM hasn't beaten its best in the last 3+ sessions. Try one more rep at the same weight, or a lighter week.</div>
+    </div>` : '';
+
   root.innerHTML = `
     <div class="screen today">
       <div>
@@ -123,6 +135,7 @@ export async function render(root) {
         </div>
       </div>
       ${muscleBlock}
+      ${stalledBlock}
       ${staleBlock}
       ${recent.length ? `
         <div class="recent">

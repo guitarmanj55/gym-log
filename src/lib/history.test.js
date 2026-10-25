@@ -88,3 +88,27 @@ test('matchesQuery', () => {
   assert.equal(matchesQuery('Squat', 'bench'), false);
   assert.equal(matchesQuery('Squat', '  '), true);
 });
+
+import { dateInputValue, dayDiff, shiftDays, parseAmount } from './history.js';
+
+test('dateInputValue and dayDiff', () => {
+  assert.equal(dateInputValue(at(2026, 10, 21, 23)), '2026-10-21');
+  assert.equal(dayDiff(at(2026, 10, 21), '2026-10-19'), -2);
+  assert.equal(dayDiff(at(2026, 10, 21, 23), '2026-10-21'), 0);
+  assert.equal(dayDiff(at(2026, 10, 21), '2026-11-02'), 12);
+  assert.equal(dayDiff(at(2026, 10, 21), ''), null);
+});
+
+test('shiftDays keeps the time of day, even across a clock change', () => {
+  assert.equal(shiftDays(at(2026, 10, 21, 18), -2), at(2026, 10, 19, 18));
+  assert.equal(shiftDays(at(2026, 10, 20, 18), 10), at(2026, 10, 30, 18)); // UK clocks go back on 25 Oct
+});
+
+test('parseAmount', () => {
+  assert.equal(parseAmount('62.5'), 62.5);
+  assert.equal(parseAmount(' 62,5 '), 62.5);
+  assert.equal(parseAmount('0'), 0);
+  assert.equal(parseAmount(''), null);
+  assert.equal(parseAmount('abc'), null);
+  assert.equal(parseAmount('-3'), null);
+});

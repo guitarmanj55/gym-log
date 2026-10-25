@@ -3,6 +3,7 @@
 import { e1rm, bestByE1rm } from './e1rm.js';
 import { weekStart, headlineSet, prSetIds, fmtSet, fmtDuration, shortDate } from './history.js';
 import { muscleLabel } from './exercise.js';
+import { topSetPoints, stallInfo } from './progress.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const isWork = (s) => s.type === 'top' || s.type === 'backoff';
@@ -132,4 +133,25 @@ export function summaryText(sum) {
   }
   lines.push('', `${sum.sets} sets · ${sum.volumeKg.toLocaleString('en-GB')} kg moved${sum.prCount ? ` · ${sum.prCount} PR${sum.prCount > 1 ? 's' : ''}` : ''}`);
   return lines.join('\n');
+}
+
+/**
+ * Lifts whose e1RM hasn't set a new best in their last few sessions, trained within `withinDays`.
+ * Most sessions without progress first.
+ */
+export function stalledLifts(sets, exercises, now, { minSessions = 3, withinDays = 28 } = {}) {
+  const byLift = new Map();
+  for (const s of sets) {
+    if (s.type !== 'top' || s.completedAt > now) continue;
+    if (!byLift.has(s.exerciseId)) byLift.set(s.exerciseId, []);
+    byLift.get(s.exerciseId).push(s);
+  }
+  const out = [];
+  for (const [id, list] of byLift) {
+    const exercise = exercises.get(id);
+    const points = topSetPoints(list);
+    const info = stallInfo(points, minSessions);
+    if (exercise && info?.stalled && now - points.at(-1).t <= withinDays * DAY) out.push({ exercise, ...info });
+  }
+  return out.sort((a, b) => b.sessions - a.sessions || a.exercise.name.localeCompare(b.exercise.name));
 }

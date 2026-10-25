@@ -2,7 +2,7 @@
 import { getAll } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
 import { prSetIds, fmtSet } from '../lib/history.js';
-import { RANGES, rangeStart, topSetPoints, changeLabel, liftStats, chartGeometry } from '../lib/progress.js';
+import { RANGES, rangeStart, topSetPoints, changeLabel, liftStats, chartGeometry, stallInfo } from '../lib/progress.js';
 import { detailLine, musclesLine } from '../lib/exercise.js';
 import { updateExercise } from '../db/workout.js';
 import { detailFields, formAttrs, readDetails } from './exercise-form.js';
@@ -76,6 +76,7 @@ export async function render(root) {
     const latest = allPoints.at(-1);
     const change = changeLabel(points, range);
     const stats = liftStats(points);
+    const stall = stallInfo(allPoints);
     const bw = lift.equipment === 'bodyweight';
 
     root.innerHTML = `
@@ -97,6 +98,7 @@ export async function render(root) {
             </div>
             ${change ? `<div class="change-pill${change.diff < 0 ? ' down' : ''}">${esc(change.text)}</div>` : ''}
           </div>
+          ${stall?.stalled ? `<div class="banner warn"><div class="dot"></div><div><div class="banner-title">Stalled: no new best in ${stall.sessions} sessions</div><div class="banner-sub">Best e1RM is ${stall.best} kg. Try one more rep at the same weight, or a lighter week.</div></div></div>` : ''}
           <div class="stack">
             <div class="segmented" role="group" aria-label="Time range">
               ${RANGES.map((r) => `<button type="button" data-act="range" data-range="${r}" aria-pressed="${r === range}">${r}</button>`).join('')}

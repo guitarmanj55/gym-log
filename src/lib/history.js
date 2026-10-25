@@ -101,3 +101,30 @@ export function matchesQuery(text, query) {
   const hay = text.toLowerCase();
   return query.toLowerCase().split(/\s+/).filter(Boolean).every((w) => hay.includes(w));
 }
+
+/** "2026-10-21" for a date input, in local time. */
+export function dateInputValue(ms) {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Whole days from the day of `ms` to a date input value ("2026-10-21"), local time; null if it isn't a date. */
+export function dayDiff(ms, value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+  if (!m) return null;
+  const d = new Date(ms);
+  return Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())) / DAY);
+}
+
+/** `ms` moved by whole days, keeping the time of day (also across clock changes). */
+export function shiftDays(ms, days) {
+  const d = new Date(ms);
+  d.setDate(d.getDate() + days);
+  return d.getTime();
+}
+
+/** Reads a typed weight or reps ("62,5" works). Null if it isn't a number of at least 0. */
+export function parseAmount(text) {
+  const n = Number(String(text ?? '').trim().replace(',', '.'));
+  return String(text ?? '').trim() !== '' && Number.isFinite(n) && n >= 0 ? n : null;
+}

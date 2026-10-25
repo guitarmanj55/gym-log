@@ -174,10 +174,15 @@ a.btn{text-decoration:none}
 .hist-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:15px}
 .hist-ex{display:flex;align-items:center;gap:8px;color:var(--muted)}
 .hist-set{font-weight:600;white-space:nowrap}
+.stall{height:20px;padding:0 7px;border-radius:6px;background:var(--warn);color:var(--on-accent);font-size:12px;font-weight:700;display:inline-flex;align-items:center}
 .pr{height:20px;padding:0 7px;border-radius:6px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;display:inline-flex;align-items:center}
 .hist-sets{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--text-2);margin:-2px 0 4px}
 .hist-sets b{font-size:11px;color:var(--muted);font-weight:700;margin-right:2px}
-.hist-actions{display:flex;justify-content:space-between;margin:-6px 12px 6px}
+.hist-actions{display:flex;justify-content:space-between;flex-wrap:wrap;margin:-6px 12px 6px}
+.hist-detail{display:flex;flex-direction:column;gap:8px;padding:0 16px 8px}
+.hist-detail .hist-sets{margin:0 0 4px;gap:6px}
+.set-chip{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line-strong);background:var(--raised);color:var(--text);font-size:15px;font-weight:600}
+.set-chip b{font-size:11px;color:var(--muted);margin-right:4px}
 .hist-actions a.text-btn{display:flex;align-items:center;color:var(--accent)}
 
 /* ============ LIFT PROGRESS ============ */
@@ -362,8 +367,8 @@ a.banner{text-decoration:none;color:inherit}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.10.1";
-var APP_WHATS_NEW = "the backup warning dot on the tab bar only shows now if automatic backup is failing";
+var APP_VERSION = "0.11";
+var APP_WHATS_NEW = "fix or delete any past set and change a workout's date in History; lifts that stop improving are flagged as Stalled; restoring a cloud copy saves your current data first";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>
