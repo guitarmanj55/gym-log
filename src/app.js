@@ -1,6 +1,7 @@
-// App shell: hash router, service worker, persistent storage and the update toast.
+// App shell: hash router, service worker, persistent storage, automatic backup and the update toast.
 import { openDB, getSettings, count } from './db/db.js';
 import { backupStatus } from './lib/backup.js';
+import { getCloud, autoBackup } from './cloud.js';
 import { toast } from './ui.js';
 import * as today from './screens/today.js';
 import * as history from './screens/history.js';
@@ -46,7 +47,7 @@ async function route() {
 /** Warning dot on the Backup tab while a backup is overdue (iOS web apps can't notify without a push server). */
 async function markBackupTab() {
   try {
-    const status = backupStatus(await getSettings(), await count('sessions'), Date.now());
+    const status = backupStatus(await getSettings(), await count('sessions'), Date.now(), getCloud().lastAt);
     const tab = document.querySelector('#tabs a[data-tab=backup]');
     tab.classList.toggle('alert', status.overdue);
     tab.setAttribute('aria-label', status.overdue ? 'Backup, overdue' : 'Backup');
@@ -78,6 +79,9 @@ await openDB().catch((err) => console.error('IndexedDB failed to open', err));
 route();
 askPersist();
 announceUpdate();
+autoBackup();
+// Back up whatever changed when leaving the app and catch up on return (iOS may suspend an upload mid-way).
+document.addEventListener('visibilitychange', autoBackup);
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   // When a new release's worker takes over, reload once so its files are used straight away.

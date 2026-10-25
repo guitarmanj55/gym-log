@@ -15,6 +15,7 @@ e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 - **Relative paths only** (`./`, `src/...`), never a leading slash. The site is served from `/gym-log/`, so absolute paths break the deployed app.
 - **Storage is IndexedDB**, accessed through a small hand-written wrapper in `src/db/`. The stores and indexes are defined in `src/db/schema.js`. Changing a store or the meaning of a field needs a `DB_VERSION` bump and a migration in `createStores()`. Never change saved data without a migration.
 - **Backups:** JSON export/import is an MVP feature. Backup files carry a `schema` number and imports run through the same migrations. Call `navigator.storage.persist()` on first run.
+- **Automatic backup** (since v0.10): `src/cloud.js` uploads the full backup JSON to the Worker in `worker/` (`gym-log-backup.t212-pocket.workers.dev`, KV namespace `BACKUPS`) on launch, on visibility change and after finishing a workout, only when the data changed (fingerprint in `src/lib/backup.js`) and never mid-workout or when empty. The Worker keeps every copy forever (the user wants years of history). Auth is one shared key: Worker secret `BACKUP_KEY`, also in `.env` as `GYM_LOG_BACKUP_KEY`, pasted once into the Backup screen and kept in the phone's localStorage (not in settings, so it never lands in exported files). On localhost the app talks to `wrangler dev` on port 8787 (test key in `worker/.dev.vars`), so testing never touches real backups. Deploy Worker changes with `npx wrangler deploy` in `worker/`.
 - **Separate storage:** the Safari tab and the installed app do not share data. Real logging happens in the installed app.
 - **Release routine:** bump `APP_VERSION` and `APP_WHATS_NEW` in `index.html`, bump `CACHE` in `sw.js` and update its `SHELL` list when files are added or renamed, run the tests, then push to `main` (Pages redeploys).
 - **Service worker:** network-first for HTML, manifest and JS modules so updates arrive when online; cache-first for icons and fonts. Every module file must be in `SHELL` or the app breaks offline.
@@ -33,6 +34,7 @@ e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 - `src/db/` the IndexedDB wrapper (open, get, put, query, export, import)
 - `src/lib/` pure logic and its tests
 - `src/screens/` one module per screen (today, workout editor, active, lift, history, backup, summary)
+- `src/cloud.js` automatic backup client; `worker/` the Cloudflare Worker that stores every backup
 - `src/lib/feedback.js` PRs as they're logged, hard sets per muscle this week, lifts not trained lately, the workout summary
 - `sw.js`, `manifest.webmanifest`, `icons/`
 - `design/` the approved screens, exported as images or PDF

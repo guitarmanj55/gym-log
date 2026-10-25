@@ -1,0 +1,14 @@
+name = "gym-log-backup"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+workers_dev = true
+preview_urls = false
+
+# Every backup the app uploads, kept forever (key "b:<time>").
+[[kv_namespaces]]
+binding = "BACKUPS"
+id = "617f4dba3aa34401b422806f0744f03f"
+
+# Secret (never in this file or git): npx wrangler secret put BACKUP_KEY
+# The same key is in ../.env (not committed) and is pasted into the app's Backup screen once.

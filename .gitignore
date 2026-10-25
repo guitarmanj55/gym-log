@@ -5,3 +5,5 @@ gym-log-backup-*.json
 .DS_Store
 Thumbs.db
 .claude/
+.dev.vars
+.wrangler/

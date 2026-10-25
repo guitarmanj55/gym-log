@@ -17,6 +17,7 @@ import { loadsPlates, barKgFor, startKgFor, detailLine, musclesLine } from '../l
 import { detailFields, formAttrs, readDetails } from './exercise-form.js';
 import { keepAwake, unlockAudio, beep, fanfare } from '../device.js';
 import { esc, toast, flash, fmtKg } from '../ui.js';
+import { autoBackup } from '../cloud.js';
 
 // Per-workout screen state that should survive a reload: current exercise, edited plans, rest timer.
 const STATE_KEY = 'gymlog_workout';
@@ -490,6 +491,7 @@ export async function render(root) {
       }
       if (!confirm(`Finish this workout? ${detail.sets.length} set${detail.sets.length > 1 ? 's' : ''} logged.`)) return;
       await finishSession(session.id);
+      autoBackup();
       clearWorkoutState();
       location.hash = `#summary/${session.id}`;
     },
