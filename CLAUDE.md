@@ -5,7 +5,9 @@ Personal strength-training tracker, built for one user on an iPhone 16 Pro. Ship
 ## How the user trains
 Each exercise is: one or more light warm-up sets, then ONE top set as heavy as possible (often to failure), then an optional back-off set. There is no fixed program. Progress is judged by the e1RM trend of top sets. The app only suggests "beat last time" (add 2.5 kg or one rep); do not build a program or progression engine in v1.
 
-Set types: `warmup`, `top`, `backoff`.
+The app is built around **saved workouts** (e.g. Push, Legs): a name and an ordered list of exercises, stored in the `workouts` store. Today lists them; one tap starts a session from one. Exercises added during a session are added to its workout too; removing one only affects that session.
+
+Set types: `warmup`, `top`, `backoff`. The UI calls a `top` set just "Set" (the user asked to drop "top"); the stored type stays `top`. "+ Set" copies the kg and reps of the set just logged.
 e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 
 ## Rules
@@ -17,7 +19,8 @@ e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 - **Release routine:** bump `APP_VERSION` and `APP_WHATS_NEW` in `index.html`, bump `CACHE` in `sw.js` and update its `SHELL` list when files are added or renamed, run the tests, then push to `main` (Pages redeploys).
 - **Service worker:** network-first for HTML, manifest and JS modules so updates arrive when online; cache-first for icons and fonts. Every module file must be in `SHELL` or the app breaks offline.
 - **iOS install:** needs `apple-mobile-web-app-capable`, an `apple-touch-icon` (180x180), `viewport-fit=cover`, and a manifest with `display: standalone`. Install only works from Safari.
-- **Rest timer:** store an end timestamp and compute remaining time on resume. Never rely on `setInterval` counting down, because iOS suspends JS in the background. The Vibration API does not work on iOS, so use sound and visual cues. Use the Screen Wake Lock API during an active workout.
+- **Exercise setup must stay quick:** name plus one of six muscle groups (`MUSCLES` in `src/lib/exercise.js`); equipment is guessed from the name (`guessEquipment`) and sits in a fold with setup notes. Don't bring back detailed muscles, angle or grip pickers.
+- **Rest timer:** always 1 minute (`REST_SEC` in `src/lib/rest.js`), +30s button for longer. Store an end timestamp and compute remaining time on resume. Never rely on `setInterval` counting down, because iOS suspends JS in the background. The Vibration API does not work on iOS, so use sound and visual cues. Use the Screen Wake Lock API during an active workout.
 - **Units:** kg only. Default step 2.5 kg. Bar 20 kg. Plate set is configurable (default 25, 20, 15, 10, 5, 2.5, 1.25).
 - **Pure logic is separate from UI:** e1RM, plate maths and the suggestion rule live in `src/lib/` as plain JS with no DOM or browser globals, each with a `*.test.js` beside it. Run them with `node --test`.
 - **UX:** one-handed use, touch targets at least 44px, dark UI, numeric inputs use `inputmode="decimal"`. Logging a set must take seconds.
@@ -29,13 +32,13 @@ e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 - `src/db/schema.js` stores, indexes, defaults, backup shape and migrations
 - `src/db/` the IndexedDB wrapper (open, get, put, query, export, import)
 - `src/lib/` pure logic and its tests
-- `src/screens/` one module per screen (today, active, lift, history, backup, summary)
+- `src/screens/` one module per screen (today, workout editor, active, lift, history, backup, summary)
 - `src/lib/feedback.js` PRs as they're logged, hard sets per muscle this week, lifts not trained lately, the workout summary
 - `sw.js`, `manifest.webmanifest`, `icons/`
 - `design/` the approved screens, exported as images or PDF
 
 ## Design reference
-The approved screens are in `design/` as PNGs (Today, Active workout, Lift progress, History, Backup), with exact styling in `design/source/*.html`. Match them. The numbers shown in the designs are sample data only. The PNGs use fallback fonts, so trust the real fonts (Barlow, Barlow Condensed) and the source HTML for sizing.
+The approved screens are in `design/` as PNGs (Today, Active workout, Lift progress, History, Backup), with exact styling in `design/source/*.html`. Match their styling. Since v0.9 Today shows saved workouts instead of the "Up next" card in the design. The numbers shown in the designs are sample data only. The PNGs use fallback fonts, so trust the real fonts (Barlow, Barlow Condensed) and the source HTML for sizing.
 
 Tokens:
 - Background `#0E0F11`, surface `#17191D`, raised `#1F2227`, line `#2A2E35`

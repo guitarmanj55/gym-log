@@ -1,4 +1,4 @@
-// Workout data: sessions, the exercises in them and their sets. Built on the db.js wrapper.
+// Workout data: saved workouts, sessions, the exercises in them and their sets. Built on the db.js wrapper.
 import { get, getAll, getAllByIndex, put, putMany, remove, removeMany } from './db.js';
 import { cleanDetails, withDetails } from '../lib/exercise.js';
 
@@ -11,12 +11,6 @@ export async function getActiveSession() {
   return open.sort((a, b) => b.startedAt - a.startedAt)[0] || null;
 }
 
-/** The most recently started finished session, or null. */
-export async function getLastFinishedSession() {
-  const done = (await getAll('sessions')).filter((s) => s.endedAt);
-  return done.sort((a, b) => b.startedAt - a.startedAt)[0] || null;
-}
-
 /** Exercises of a session in order. */
 export async function getSessionExercises(sessionId) {
   const list = await getAllByIndex('sessionExercises', 'sessionId', sessionId);
@@ -26,22 +20,60 @@ export async function getSessionExercises(sessionId) {
 }
 
 /**
- * Resumes the session in progress, or starts one with the same exercises as `templateId`
- * (default: the last finished session).
+ * Resumes the session in progress, or starts one from a saved workout (its exercises, in order).
+ * With no `workoutId`, starts an empty session.
  */
-export async function startSession(templateId, now = Date.now()) {
+export async function startSession(workoutId, now = Date.now()) {
   const active = await getActiveSession();
   if (active) return active;
   const session = { id: uid(), startedAt: now };
-  const fromId = templateId || (await getLastFinishedSession())?.id;
-  const template = fromId ? await getAllByIndex('sessionExercises', 'sessionId', fromId) : [];
+  let exerciseIds = [];
+  if (workoutId) {
+    const workout = await get('workouts', workoutId);
+    if (!workout) throw new Error('That workout no longer exists.');
+    Object.assign(session, { workoutId, name: workout.name });
+    const known = new Set((await getAll('exercises')).map((e) => e.id));
+    exerciseIds = workout.exerciseIds.filter((id) => known.has(id));
+  }
   await putMany([
     ['sessions', session],
-    ...template.sort(byOrder).map((se, i) => ['sessionExercises', {
-      id: uid(), sessionId: session.id, exerciseId: se.exerciseId, order: i,
-    }]),
+    ...exerciseIds.map((exerciseId, i) => ['sessionExercises', { id: uid(), sessionId: session.id, exerciseId, order: i }]),
   ]);
   return session;
+}
+
+// ---------- Saved workouts ----------
+
+export async function listWorkouts() {
+  return (await getAll('workouts')).sort((a, b) => a.createdAt - b.createdAt);
+}
+
+export function getWorkout(id) {
+  return get('workouts', id);
+}
+
+/** Creates or updates a workout. Returns the saved record. */
+export async function saveWorkout({ id, name, exerciseIds }, now = Date.now()) {
+  const clean = String(name ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
+  if (!clean) throw new Error('Give the workout a name.');
+  const all = await getAll('workouts');
+  const clash = all.find((w) => w.id !== id && w.name.toLowerCase() === clean.toLowerCase());
+  if (clash) throw new Error(`There's already a workout called ${clash.name}.`);
+  const existing = id ? all.find((w) => w.id === id) : null;
+  return put('workouts', {
+    id: existing?.id || uid(), createdAt: existing?.createdAt || now, name: clean, exerciseIds: [...new Set(exerciseIds)],
+  });
+}
+
+/** Deletes a saved workout. Sessions done from it stay in History. */
+export function deleteWorkout(id) {
+  return remove('workouts', id);
+}
+
+/** Puts an exercise at the end of a workout, if it isn't in it already. */
+async function appendToWorkout(workoutId, exerciseId) {
+  const w = workoutId && (await get('workouts', workoutId));
+  if (w && !w.exerciseIds.includes(exerciseId)) await put('workouts', { ...w, exerciseIds: [...w.exerciseIds, exerciseId] });
 }
 
 /**
@@ -89,11 +121,10 @@ export async function listExercises() {
 }
 
 /**
- * Adds an exercise to a session by name, reusing an existing exercise with the same name
- * (any case); `details` (equipment, muscles...) only apply to a new one.
- * Returns the session exercise; if the lift is already in the session, that one.
+ * The exercise with this name (any case), or a new one made from `details` (equipment, muscles...).
+ * Details only apply to a new exercise.
  */
-export async function addExerciseToSession(sessionId, details, now = Date.now()) {
+export async function findOrCreateExercise(details, now = Date.now()) {
   const clean = cleanDetails(details);
   if (!clean.name) throw new Error('Give the exercise a name.');
   let exercise = (await getAll('exercises')).find((e) => e.name.toLowerCase() === clean.name.toLowerCase());
@@ -101,6 +132,18 @@ export async function addExerciseToSession(sessionId, details, now = Date.now())
     exercise = { id: uid(), ...clean, createdAt: now };
     await put('exercises', exercise);
   }
+  return exercise;
+}
+
+/**
+ * Adds an exercise to a session by name (see findOrCreateExercise). If the session came from a
+ * saved workout, the exercise is added to that workout too, so it's there next time.
+ * Returns the session exercise; if the lift is already in the session, that one.
+ */
+export async function addExerciseToSession(sessionId, details, now = Date.now()) {
+  const exercise = await findOrCreateExercise(details, now);
+  const session = await get('sessions', sessionId);
+  await appendToWorkout(session?.workoutId, exercise.id);
   const current = await getAllByIndex('sessionExercises', 'sessionId', sessionId);
   const existing = current.find((se) => se.exerciseId === exercise.id);
   if (existing) return existing;

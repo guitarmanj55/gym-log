@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  weekStart, weekStrip, groupLabel, relativeDay, fmtDuration, fmtSet, headlineSet, prSetIds, recentTopSets, nextTemplate, matchesQuery,
+  weekStart, weekStrip, groupLabel, relativeDay, fmtDuration, fmtSet, headlineSet, prSetIds, recentTopSets, matchesQuery,
 } from './history.js';
 
 const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();
@@ -80,20 +80,6 @@ test('recentTopSets: latest per lift, newest first', () => {
   ];
   assert.deepEqual(recentTopSets(sets).map((s) => s.id), ['c', 'b']);
   assert.deepEqual(recentTopSets(sets, 1).map((s) => s.id), ['c']);
-});
-
-test('nextTemplate carries on a rotation', () => {
-  const s = (id, startedAt, ...exerciseIds) => ({ id, startedAt, exerciseIds });
-  assert.equal(nextTemplate([]), null);
-  assert.equal(nextTemplate([s('a1', 1, 'sq', 'bp')]), 'a1'); // one workout: repeat it
-  assert.equal(nextTemplate([s('a1', 1, 'sq'), s('a2', 2, 'sq')]), 'a2'); // always the same: repeat
-  assert.equal(nextTemplate([s('a', 1, 'sq'), s('b', 2, 'dl')]), 'a'); // A, B -> A
-  assert.equal(nextTemplate([s('a', 1, 'sq'), s('b', 2, 'dl'), s('a2', 3, 'sq')]), 'b'); // A, B, A -> B
-  assert.equal(nextTemplate([
-    s('a', 1, 'sq'), s('b', 2, 'dl'), s('c', 3, 'bp'), s('a2', 4, 'sq'), s('b2', 5, 'dl'), s('c2', 6, 'bp'),
-  ]), 'a2'); // A, B, C, A, B, C -> A
-  assert.equal(nextTemplate([s('a', 1, 'bp', 'sq'), s('a2', 2, 'sq', 'bp')]), 'a2'); // order doesn't matter
-  assert.equal(nextTemplate([s('a', 1, 'sq'), s('e', 2)]), 'a'); // empty sessions ignored
 });
 
 test('matchesQuery', () => {

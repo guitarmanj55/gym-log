@@ -1,65 +1,66 @@
-// Today: what's up next (or the workout in progress), this week's training days and recent top sets.
-import { loadAll, startSession } from '../db/workout.js';
+// Today: your saved workouts (tap one to start it), the workout in progress, this week's training
+// days, sets per muscle group and recent sets.
+import { loadAll, startSession, listWorkouts } from '../db/workout.js';
 import { getSettings } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
-import { suggestNext } from '../lib/suggest.js';
-import { lastSessionSets, topSetOf } from '../lib/plan.js';
-import { weekStrip, relativeDay, fmtSet, recentTopSets, nextTemplate } from '../lib/history.js';
+import { weekStrip, relativeDay, fmtSet, recentTopSets } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
 import { weeklyMuscleSets, fmtSetCount, staleLifts } from '../lib/feedback.js';
 import { unlockAudio } from '../device.js';
-import { esc, longDate, toast, fmtKg, versionLine } from '../ui.js';
+import { esc, longDate, toast, versionLine } from '../ui.js';
 
 const timeOf = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export async function render(root) {
-  const [all, settings] = await Promise.all([loadAll(), getSettings()]);
+  const [all, settings, workouts] = await Promise.all([loadAll(), getSettings(), listWorkouts()]);
   const now = Date.now();
   const active = all.sessions.filter((s) => !s.endedAt).sort((a, b) => b.startedAt - a.startedAt)[0];
-  const setsOfExercise = (id) => all.sets.filter((s) => s.exerciseId === id);
 
-  let card;
-  let templateId = null;
+  let resume = '';
   if (active) {
     const items = all.bySession.get(active.id) || [];
     const logged = items.reduce((n, it) => n + it.sets.length, 0);
-    card = `
+    resume = `
       <div class="card">
         <div class="eyebrow">Workout in progress</div>
-        <div class="up-next">${esc(items[0]?.exercise?.name || 'Workout')}</div>
+        <div class="up-next">${esc(active.name || items[0]?.exercise?.name || 'Workout')}</div>
         <div class="kv"><div>Started</div><div>${timeOf(active.startedAt)}</div></div>
         <div class="kv"><div>Logged</div><div>${plural(items.length, 'exercise')} · ${plural(logged, 'set')}</div></div>
         <a class="btn btn-primary" href="#active" data-act="go">Resume workout</a>
       </div>`;
-  } else {
-    templateId = nextTemplate(all.finished.map((s) => ({
-      id: s.id, startedAt: s.startedAt, exerciseIds: (all.bySession.get(s.id) || []).map((it) => it.se.exerciseId),
-    })));
-    const template = all.finished.find((s) => s.id === templateId);
-    const items = templateId ? all.bySession.get(templateId) || [] : [];
-    const first = items[0];
-    let rows = '';
-    if (first) {
-      const lastTop = topSetOf(lastSessionSets(setsOfExercise(first.se.exerciseId)));
-      const suggestion = suggestNext(lastTop, settings.stepKg);
-      if (lastTop) {
-        rows = `
-          <div class="kv"><div>Last top set</div><div>${first.exercise?.equipment === 'bodyweight' ? fmtSet(lastTop, 'bodyweight') : `${fmtKg(lastTop.weightKg)} kg × ${lastTop.reps}`}</div></div>
-          ${suggestion ? `<div class="kv"><div>Suggested today</div><div class="accent">${fmtKg(suggestion.addWeight.weightKg)} kg</div></div>` : ''}`;
-      }
-    }
-    card = `
-      <div class="card">
-        <div class="eyebrow">${template ? `Up next · same as ${esc(relativeDay(template.startedAt, now))}` : 'Get started'}</div>
-        ${first
-          ? `<div class="up-next">${esc(first.exercise?.name)}</div>
-             ${rows}
-             <div class="note-lg">${items.map((it) => esc(it.exercise?.name)).join(' · ')}</div>`
-          : '<div class="lead">Start a workout, then add your first exercise. Next time it is prefilled from this one.</div>'}
-        <button type="button" class="btn btn-primary" data-act="start">Start workout</button>
-      </div>`;
   }
+
+  const lastDone = new Map(); // workoutId -> startedAt of the latest finished session (finished is newest first)
+  for (const s of all.finished) if (s.workoutId && !lastDone.has(s.workoutId)) lastDone.set(s.workoutId, s.startedAt);
+
+  const workoutCards = workouts.map((w) => {
+    const names = w.exerciseIds.map((id) => all.exercises.get(id)?.name).filter(Boolean);
+    const last = lastDone.get(w.id);
+    return `
+      <div class="wo-card">
+        <div class="wo-head">
+          <div class="wo-name">${esc(w.name)}</div>
+          <a class="text-btn" href="#workout/${esc(w.id)}" aria-label="Edit ${esc(w.name)}">Edit</a>
+        </div>
+        <div class="wo-ex">${names.length ? names.map(esc).join(' · ') : 'No exercises yet'}</div>
+        <div class="wo-foot">
+          <span class="muted">${last ? `Last done ${esc(relativeDay(last, now))}` : 'Not done yet'}</span>
+          ${active ? '' : `<button type="button" class="btn btn-primary wo-start" data-act="start" data-id="${esc(w.id)}">Start</button>`}
+        </div>
+      </div>`;
+  }).join('');
+
+  const workoutBlock = `
+    <div class="stack">
+      <div class="eyebrow">Your workouts</div>
+      ${workouts.length ? workoutCards : `
+        <div class="card">
+          <div class="lead">Make a workout for each kind of day you train, like Push, Pull and Legs. Pick its exercises once, then start it with one tap every time.</div>
+        </div>`}
+      <a class="btn ${workouts.length ? 'btn-secondary' : 'btn-primary'}" href="#workout/new">+ New workout</a>
+      ${active ? '' : '<button type="button" class="text-btn" data-act="start-empty">Or start an empty workout</button>'}
+    </div>`;
 
   const backup = backupStatus(settings, all.finished.length, now);
   const reminder = backup.overdue && !active ? `
@@ -88,8 +89,8 @@ export async function render(root) {
             <div class="muscle-n">${fmtSetCount(r.sets)}</div>
           </div>`).join('')}
       </div>` : ''}
-      <div class="note">Top and back-off sets. A lift's other muscles count half a set.${muscles.unassigned
-        ? ` ${plural(muscles.unassigned, 'set')} on lifts with no target muscles; add them from the lift's details.` : ''}</div>
+      <div class="note">Sets and back-offs, not warm-ups.${muscles.unassigned
+        ? ` ${plural(muscles.unassigned, 'set')} on lifts with no muscle group; tap Edit on the lift in a workout to add one.` : ''}</div>
     </div>` : '';
 
   const staleBlock = stale.length ? `
@@ -109,7 +110,8 @@ export async function render(root) {
         <h1 class="title">Today</h1>
       </div>
       ${reminder}
-      ${card}
+      ${resume}
+      ${workoutBlock}
       <div class="stack">
         <div class="eyebrow">This week</div>
         <div class="week" role="list" aria-label="Training days this week">
@@ -124,7 +126,7 @@ export async function render(root) {
       ${staleBlock}
       ${recent.length ? `
         <div class="recent">
-          <div class="eyebrow">Recent top sets</div>
+          <div class="eyebrow">Recent best sets</div>
           ${recent.map((s) => {
             const ex = all.exercises.get(s.exerciseId);
             return `
@@ -138,10 +140,12 @@ export async function render(root) {
     </div>`;
 
   root.querySelector('[data-act=go]')?.addEventListener('click', unlockAudio);
-  root.querySelector('[data-act=start]')?.addEventListener('click', async () => {
+  root.addEventListener('click', async (ev) => {
+    const el = ev.target.closest('[data-act=start],[data-act=start-empty]');
+    if (!el) return;
     unlockAudio(); // the tap that starts a workout also readies the rest-timer sound
     try {
-      await startSession(templateId);
+      await startSession(el.dataset.id || null);
       location.hash = '#active';
     } catch (err) {
       toast(err.message || String(err), 5000);

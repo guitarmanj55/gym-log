@@ -2,7 +2,7 @@
    HTML, the manifest and JS modules are network-first so updates arrive as soon as
    you're online; icons and fonts are cache-first. Bump CACHE on every release and
    list every module in SHELL, or the app breaks offline. */
-var CACHE = "gymlog-v13";
+var CACHE = "gymlog-v14";
 var SHELL = [
   "./",
   "index.html",
@@ -32,7 +32,8 @@ var SHELL = [
   "src/screens/history.js",
   "src/screens/lift.js",
   "src/screens/backup.js",
-  "src/screens/summary.js"
+  "src/screens/summary.js",
+  "src/screens/workout.js"
 ];
 
 /* GitHub Pages sends max-age=600, so plain fetches can get a copy up to 10 minutes old.

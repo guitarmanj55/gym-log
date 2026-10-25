@@ -1,14 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { restFor, startRest, remainingSec, restProgress, extendRest, fmtClock } from './rest.js';
+import { REST_SEC, startRest, remainingSec, restProgress, extendRest, fmtClock } from './rest.js';
 
 const NOW = 1_000_000;
 
-test('rest length by set type, with a fallback', () => {
-  const settings = { restSeconds: { warmup: 60, top: 240, backoff: 150 } };
-  assert.equal(restFor('top', settings), 240);
-  assert.equal(restFor('warmup', settings), 60);
-  assert.equal(restFor('top', {}), 120);
+test('rest is always one minute', () => {
+  assert.equal(REST_SEC, 60);
 });
 
 test('remaining time comes from the clock, rounded up', () => {

@@ -5,7 +5,7 @@ import { prSetIds, fmtSet } from '../lib/history.js';
 import { RANGES, rangeStart, topSetPoints, changeLabel, liftStats, chartGeometry } from '../lib/progress.js';
 import { detailLine, musclesLine } from '../lib/exercise.js';
 import { updateExercise } from '../db/workout.js';
-import { detailFields, formAttrs, readDetails, trackMuscleOrder } from './exercise-form.js';
+import { detailFields, formAttrs, readDetails } from './exercise-form.js';
 import { esc, fmtKg, toast } from '../ui.js';
 
 const LIFT_KEY = 'gymlog_lift';
@@ -45,7 +45,7 @@ export async function render(root) {
   let editing = false;
 
   function chart(points, name) {
-    if (!points.length) return `<div class="chart-empty">No top sets in this period.</div>`;
+    if (!points.length) return `<div class="chart-empty">No sets in this period.</div>`;
     const g = chartGeometry(points);
     const first = Math.round(points[0].e1rm);
     const last = Math.round(points.at(-1).e1rm);
@@ -107,10 +107,10 @@ export async function render(root) {
             <div class="tiles">
               <div class="tile"><div class="tile-label">Heaviest set</div><div class="tile-val">${bw ? `+${fmtKg(stats.heaviest.weightKg)} × ${stats.heaviest.reps}` : fmtSet(stats.heaviest)}</div></div>
               <div class="tile"><div class="tile-label">Reps at ${fmtKg(stats.atKg)} kg</div><div class="tile-val">${stats.repsAt}</div></div>
-              <div class="tile"><div class="tile-label">Top sets</div><div class="tile-val">${stats.count}</div></div>
+              <div class="tile"><div class="tile-label">Sets</div><div class="tile-val">${stats.count}</div></div>
             </div>
             <div class="recent">
-              <div class="eyebrow">Top-set history</div>
+              <div class="eyebrow">Best set each workout</div>
               ${[...points].reverse().map((p) => `
                 <div class="th-row">
                   <div class="th-left">
@@ -121,7 +121,7 @@ export async function render(root) {
                   <div class="muted">e1RM ${Math.round(e1rm(p.set.weightKg, p.set.reps))}</div>
                 </div>`).join('')}
             </div>` : ''}`
-        : '<div class="lead">No top sets logged for this lift yet. Its trend starts with the first one.</div>'}
+        : '<div class="lead">No sets logged for this lift yet. Its trend starts with the first one.</div>'}
       </div>
       ${sheetOpen ? `
         <div class="sheet-backdrop" data-act="close"></div>
@@ -144,7 +144,7 @@ export async function render(root) {
         <div class="sheet-backdrop" data-act="close"></div>
         <div class="sheet" role="dialog" aria-label="Exercise details">
           <div class="sheet-head"><div class="eyebrow">Exercise details</div><button type="button" class="text-btn" data-act="close">Cancel</button></div>
-          <form ${formAttrs(lift)}>
+          <form ${formAttrs()}>
             ${detailFields(lift, { open: true })}
             <button type="submit" class="btn btn-primary">Save details</button>
           </form>
@@ -168,11 +168,10 @@ export async function render(root) {
     draw();
   });
 
-  trackMuscleOrder(root);
   root.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     try {
-      const saved = await updateExercise(lift, readDetails(ev.target));
+      const saved = await updateExercise(lift, readDetails(ev.target, lift));
       lifts[lifts.indexOf(lift)] = saved;
       lift = saved;
       editing = false;

@@ -135,6 +135,28 @@ a.btn{text-decoration:none}
 .muscle-track{height:8px;border-radius:4px;background:var(--surface)}
 .muscle-bar{height:8px;border-radius:4px;background:var(--accent);min-width:4px}
 .muscle-n{font-family:var(--font-num);font-size:20px;font-weight:700;text-align:right}
+.wo-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.wo-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wo-head .text-btn{display:flex;align-items:center;margin-right:-4px}
+.wo-name{font-family:var(--font-num);font-size:34px;font-weight:700;line-height:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wo-ex{font-size:15px;line-height:1.4;color:var(--text-2)}
+.wo-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px}
+.wo-foot .muted{font-size:14px}
+.wo-start{width:auto;min-width:120px;height:48px;padding:0 22px}
+.today .text-btn[data-act=start-empty]{align-self:center}
+
+/* ============ WORKOUT EDITOR ============ */
+.wo-list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:0 6px 0 16px}
+.wo-list .note{padding:14px 0}
+.wo-row{display:flex;align-items:center;gap:2px;min-height:56px;border-bottom:1px solid var(--line)}
+.wo-row:last-child{border-bottom:none}
+.wo-row-name{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:17px;font-weight:600}
+.wo-row-name small{font-size:13px;font-weight:500;color:var(--muted)}
+.wo-row .wk-icon{justify-content:center;color:var(--muted)}
+.wk-icon:disabled{opacity:0.3}
+.pick-list{display:flex;flex-wrap:wrap;gap:8px}
+.copy-row{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:56px;padding:10px 14px;border-radius:14px;border:1px solid var(--line-strong);background:transparent;text-align:left;font-size:15px;font-weight:600}
+.copy-row .muted{font-size:13px;font-weight:500}
 
 /* ============ HISTORY ============ */
 .hist{gap:14px}
@@ -339,8 +361,8 @@ a.banner{text-decoration:none;color:inherit}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.8";
-var APP_WHATS_NEW = "a NEW PR banner and sound, hard sets per muscle and lifts not trained lately on Today, and a summary you can share when you finish";
+var APP_VERSION = "0.9";
+var APP_WHATS_NEW = "saved workouts you start with one tap, quicker exercise setup with simple muscle groups, a 1-minute rest timer, and + Set copies the set you just did";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

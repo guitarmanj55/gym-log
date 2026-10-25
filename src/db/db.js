@@ -1,6 +1,6 @@
 // Small promise wrapper around IndexedDB. Stores and migrations live in schema.js.
 import {
-  DB_NAME, DB_VERSION, BACKUP_SCHEMA, STORES, createStores, normaliseSettings, migrateBackup,
+  DB_NAME, DB_VERSION, BACKUP_SCHEMA, STORES, DATA_STORES, createStores, normaliseSettings, migrateBackup,
 } from './schema.js';
 
 let dbPromise;
@@ -115,6 +115,7 @@ export async function exportBackup() {
     schema: BACKUP_SCHEMA,
     exportedAt: Date.now(),
     exercises: data.exercises,
+    workouts: data.workouts,
     sessions: data.sessions,
     sessionExercises: data.sessionExercises,
     sets: data.sets,
@@ -132,7 +133,7 @@ export async function importBackup(file) {
   const names = Object.keys(STORES);
   const tx = db.transaction(names, 'readwrite');
   for (const n of names) tx.objectStore(n).clear();
-  for (const n of ['exercises', 'sessions', 'sessionExercises', 'sets']) {
+  for (const n of DATA_STORES) {
     const s = tx.objectStore(n);
     for (const r of data[n]) s.put(r);
   }

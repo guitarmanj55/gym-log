@@ -27,8 +27,8 @@ test('prFor: ties, warm-ups, other lifts and first sets are not PRs', () => {
 
 test('weeklyMuscleSets: primary counts 1, others ½, only work sets this week', () => {
   const exercises = new Map([
-    ['bench', { muscles: ['mid-chest', 'triceps'] }],
-    ['dip', { muscles: ['triceps'] }],
+    ['bench', { muscles: ['chest', 'arms'] }],
+    ['dip', { muscles: ['arms'] }],
     ['curl', {}],
   ]);
   const sets = [
@@ -38,7 +38,7 @@ test('weeklyMuscleSets: primary counts 1, others ½, only work sets this week', 
     set({ exerciseId: 'dip', completedAt: at(2026, 10, 18) }), // last Sunday
   ];
   const { rows, unassigned } = weeklyMuscleSets(sets, exercises, NOW);
-  assert.deepEqual(rows.map((r) => [r.label, r.sets]), [['Mid chest', 2], ['Triceps', 2]]);
+  assert.deepEqual(rows.map((r) => [r.label, r.sets]), [['Arms', 2], ['Chest', 2]]);
   assert.equal(unassigned, 1);
 });
 

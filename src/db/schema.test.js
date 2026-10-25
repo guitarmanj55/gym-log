@@ -46,6 +46,7 @@ test('rejects damaged records', () => {
 test('missing stores become empty lists', () => {
   const out = migrateBackup({ schema: 1 });
   assert.deepEqual(out.sets, []);
+  assert.deepEqual(out.workouts, []);
   assert.equal(out.settings.id, 'settings');
 });
 
@@ -56,9 +57,10 @@ test('migrateBackup does not change its input', () => {
   assert.equal(JSON.stringify(file), before);
 });
 
-test('normaliseSettings fills missing rest times', () => {
-  const s = normaliseSettings({ restSeconds: { top: 300 } });
-  assert.deepEqual(s.restSeconds, { warmup: 60, top: 300, backoff: 150 });
+test('normaliseSettings fills missing fields', () => {
+  const s = normaliseSettings({ stepKg: 5 });
+  assert.equal(s.stepKg, 5);
+  assert.equal(s.barWeightKg, 20);
 });
 
 test('backupFileName', () => {
@@ -70,7 +72,7 @@ test('schema 1 backups get exercise muscles from muscleGroup', () => {
   file.exercises.push({ id: 'e2', name: 'Fly', muscleGroup: 'Chest', createdAt: 1 }, { id: 'e3', name: 'Curl', muscleGroup: 'biceps', createdAt: 1 });
   const out = migrateBackup(file);
   assert.deepEqual(out.exercises.map((e) => [e.muscles, e.setup, 'muscleGroup' in e]), [
-    [undefined, undefined, false], [undefined, 'Chest', false], [['biceps'], undefined, false],
+    [undefined, undefined, false], [undefined, 'Chest', false], [['arms'], undefined, false],
   ]);
 });
 
@@ -78,4 +80,19 @@ test('rejects a muscle list that is not a list', () => {
   const file = { ...valid(), schema: BACKUP_SCHEMA };
   file.exercises[0].muscles = 'quads';
   assert.throws(() => migrateBackup(file), /bad muscle list/);
+});
+
+test('schema 2 backups get muscle groups and an empty workout list', () => {
+  const file = { ...valid(), schema: 2 };
+  file.exercises[0].muscles = ['quads', 'glutes', 'lower-back'];
+  const out = migrateBackup(file);
+  assert.deepEqual(out.exercises[0].muscles, ['legs', 'back']);
+  assert.deepEqual(out.workouts, []);
+});
+
+test('saved workouts are checked', () => {
+  const file = { ...valid(), schema: BACKUP_SCHEMA, workouts: [{ id: 'w1', name: 'Legs', exerciseIds: ['e1'], createdAt: 1 }] };
+  assert.equal(migrateBackup(file).workouts.length, 1);
+  assert.throws(() => migrateBackup({ ...file, workouts: [{ id: 'w1', name: '', exerciseIds: [] }] }), /workout has no name/);
+  assert.throws(() => migrateBackup({ ...file, workouts: [{ id: 'w1', name: 'Legs', exerciseIds: 'e1' }] }), /bad exercise list/);
 });

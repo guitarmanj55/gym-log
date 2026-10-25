@@ -1,10 +1,10 @@
 // IndexedDB schema for Gym Log. Plain JS, no dependencies.
 // Changing a store, index or field meaning needs a DB_VERSION bump and a migration in createStores().
-import { migrateExerciseV2 } from '../lib/exercise.js';
+import { migrateExerciseV2, migrateExerciseV3 } from '../lib/exercise.js';
 
 export const DB_NAME = 'gymlog';
-export const DB_VERSION = 2;
-export const BACKUP_SCHEMA = 2;
+export const DB_VERSION = 3;
+export const BACKUP_SCHEMA = 3;
 
 export const SET_TYPES = ['warmup', 'top', 'backoff'];
 // Equipment, muscles and the other exercise detail lists live in src/lib/exercise.js.
@@ -14,7 +14,7 @@ export const SET_TYPES = ['warmup', 'top', 'backoff'];
  * @property {string} id            crypto.randomUUID(); permanent, never reused
  * @property {string} name
  * @property {string=} equipment    an EQUIPMENT id from lib/exercise.js; missing means barbell
- * @property {string[]=} muscles    MUSCLES ids, primary first (schema 2; replaced muscleGroup)
+ * @property {string[]=} muscles    MUSCLES group ids, primary first (schema 3: groups, was detailed muscles)
  * @property {string=} position     POSITIONS id: flat, incline, seated...
  * @property {string=} grip         GRIPS id: overhand, underhand, neutral, mixed
  * @property {string=} width        WIDTHS id: close, shoulder, wide
@@ -28,8 +28,15 @@ export const SET_TYPES = ['warmup', 'top', 'backoff'];
  * @property {string} id
  * @property {number} startedAt
  * @property {number=} endedAt
- * @property {string=} name         e.g. "Session A"
+ * @property {string=} workoutId    the Workout it was started from (schema 3)
+ * @property {string=} name         that workout's name when it was started
  * @property {string=} notes
+ *
+ * @typedef {Object} Workout          a saved group of exercises to reuse, e.g. "Push" (schema 3)
+ * @property {string} id
+ * @property {string} name
+ * @property {string[]} exerciseIds  in order
+ * @property {number} createdAt
  *
  * @typedef {Object} SessionExercise
  * @property {string} id
@@ -55,7 +62,6 @@ export const SET_TYPES = ['warmup', 'top', 'backoff'];
  * @property {number} barWeightKg
  * @property {number[]} plates
  * @property {number} stepKg
- * @property {{warmup:number, top:number, backoff:number}} restSeconds
  * @property {number=} lastBackupAt
  * @property {boolean} backupReminder
  *
@@ -63,6 +69,7 @@ export const SET_TYPES = ['warmup', 'top', 'backoff'];
  * @property {number} schema             BACKUP_SCHEMA at export time
  * @property {number} exportedAt
  * @property {Exercise[]} exercises
+ * @property {Workout[]} workouts       schema 3
  * @property {Session[]} sessions
  * @property {SessionExercise[]} sessionExercises
  * @property {SetEntry[]} sets
@@ -74,7 +81,6 @@ export const DEFAULT_SETTINGS = {
   barWeightKg: 20,
   plates: [25, 20, 15, 10, 5, 2.5, 1.25],
   stepKg: 2.5,
-  restSeconds: { warmup: 60, top: 240, backoff: 150 },
   backupReminder: true,
 };
 
@@ -96,6 +102,7 @@ export const STORES = {
     ],
   },
   settings: { keyPath: 'id', indexes: [] },
+  workouts: { keyPath: 'id', indexes: [] },
 };
 
 /**
@@ -111,27 +118,31 @@ export function createStores(db, oldVersion, tx) {
       }
     }
   }
-  if (oldVersion >= 1 && oldVersion < 2) {
-    // Exercise details: muscleGroup (free text, never set by the UI) becomes muscles.
+  if (oldVersion >= 1 && oldVersion < 3) {
+    // Exercise rewrites. One cursor runs every step a record needs, in order:
+    // schema 2: muscleGroup (free text, never set by the UI) becomes muscles;
+    // schema 3: detailed muscles become muscle groups.
+    const steps = [...(oldVersion < 2 ? [migrateExerciseV2] : []), migrateExerciseV3];
     const req = tx.objectStore('exercises').openCursor();
     req.onsuccess = () => {
       const cursor = req.result;
       if (!cursor) return;
-      if ('muscleGroup' in cursor.value) cursor.update(migrateExerciseV2(cursor.value));
+      cursor.update(steps.reduce((e, step) => step(e), cursor.value));
       cursor.continue();
     };
+    // Saved workouts (step 1 creates every store, so only older databases need this).
+    db.createObjectStore('workouts', { keyPath: STORES.workouts.keyPath });
   }
-  // if (oldVersion < 3) { ...migration for DB_VERSION 3... }
+  // if (oldVersion < 4) { ...migration for DB_VERSION 4... }
 }
 
 // ---------- Backups ----------
 
-const DATA_STORES = ['exercises', 'sessions', 'sessionExercises', 'sets'];
+export const DATA_STORES = ['exercises', 'workouts', 'sessions', 'sessionExercises', 'sets'];
 
 /** Settings from storage or a backup, with any missing fields filled from DEFAULT_SETTINGS. */
 export function normaliseSettings(s) {
   const out = { ...DEFAULT_SETTINGS, ...(s && typeof s === 'object' ? s : {}), id: 'settings' };
-  out.restSeconds = { ...DEFAULT_SETTINGS.restSeconds, ...(s?.restSeconds || {}) };
   return out;
 }
 
@@ -149,7 +160,8 @@ export function migrateBackup(file) {
   const data = { schema, exportedAt: file.exportedAt, settings: file.settings };
   for (const name of DATA_STORES) data[name] = Array.isArray(file[name]) ? file[name].map((r) => ({ ...r })) : [];
   if (data.schema < 2) { data.exercises = data.exercises.map(migrateExerciseV2); data.schema = 2; }
-  // if (data.schema < 3) { ...rewrite records for schema 3...; data.schema = 3; }
+  if (data.schema < 3) { data.exercises = data.exercises.map(migrateExerciseV3); data.schema = 3; }
+  // if (data.schema < 4) { ...rewrite records for schema 4...; data.schema = 4; }
 
   data.schema = BACKUP_SCHEMA;
   data.settings = normaliseSettings(data.settings);
@@ -175,6 +187,10 @@ export function validateBackup(data) {
   for (const e of data.exercises) {
     if (typeof e.name !== 'string' || !e.name.trim()) fail('an exercise has no name.');
     if (e.muscles !== undefined && !Array.isArray(e.muscles)) fail(`${e.name} has a bad muscle list.`);
+  }
+  for (const w of data.workouts) {
+    if (typeof w.name !== 'string' || !w.name.trim()) fail('a workout has no name.');
+    if (!Array.isArray(w.exerciseIds) || !w.exerciseIds.every(isId)) fail(`workout ${w.name} has a bad exercise list.`);
   }
   for (const s of data.sessions) {
     if (!isNum(s.startedAt)) fail('a session has no start time.');

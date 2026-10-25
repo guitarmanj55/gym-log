@@ -1,5 +1,6 @@
-// Active workout: the core screen. One exercise at a time: warm-ups, one top set, back-offs,
-// prefilled from last time, with steppers, a rest timer, live e1RM and per-side plates.
+// Active workout: the core screen. One exercise at a time: warm-ups, the working sets, back-offs,
+// prefilled from last time, with steppers, a one-minute rest timer, live e1RM and per-side plates.
+// Internally a working set is still type 'top'; the screen just calls it a set.
 import { getSettings } from '../db/db.js';
 import {
   getActiveSession, getSessionDetail, getExerciseSets, listExercises, addExerciseToSession,
@@ -11,9 +12,9 @@ import { prFor } from '../lib/feedback.js';
 import { platesPerSide, floorToStep } from '../lib/plates.js';
 import { beats } from '../lib/suggest.js';
 import { lastSessionSets, topSetOf, planFromLast, remainingPlan, buildRows, insertIndex } from '../lib/plan.js';
-import { restFor, startRest, remainingSec, restProgress, extendRest, fmtClock } from '../lib/rest.js';
+import { REST_SEC, startRest, remainingSec, restProgress, extendRest, fmtClock } from '../lib/rest.js';
 import { loadsPlates, barKgFor, startKgFor, detailLine, musclesLine } from '../lib/exercise.js';
-import { detailFields, formAttrs, readDetails, trackMuscleOrder } from './exercise-form.js';
+import { detailFields, formAttrs, readDetails } from './exercise-form.js';
 import { keepAwake, unlockAudio, beep, fanfare } from '../device.js';
 import { esc, toast, flash, fmtKg } from '../ui.js';
 
@@ -35,8 +36,8 @@ export function clearWorkoutState() {
   try { localStorage.removeItem(STATE_KEY); } catch { /* storage blocked */ }
 }
 
-const TYPE_LABEL = { warmup: 'Warm-up', top: 'Top set', backoff: 'Back-off' };
-const TYPE_BADGE = { warmup: 'W', top: 'TOP', backoff: 'BO' };
+const TYPE_LABEL = { warmup: 'Warm-up', top: 'Set', backoff: 'Back-off' };
+const TYPE_BADGE = { warmup: 'W', top: 'SET', backoff: 'BO' };
 
 const ICON = {
   back: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
@@ -123,7 +124,7 @@ export async function render(root) {
 
   function header(it, index) {
     const title = it ? esc(it.exercise?.name || 'Exercise') : 'Workout';
-    const sub = it ? `Exercise ${index + 1} of ${detail.items.length} · ` : '';
+    const sub = `${session.name ? `${esc(session.name)} · ` : ''}${it ? `${index + 1} of ${detail.items.length} · ` : ''}`;
     return `
       <div class="wk-head">
         <a href="#today" class="wk-icon" aria-label="Back to Today">${ICON.back}</a>
@@ -248,7 +249,7 @@ export async function render(root) {
     if (!it) {
       return `
         <div class="card">
-          <div class="lead">Add the first exercise to start logging.</div>
+          <div class="lead">Add your first exercise to start logging.</div>
           <button type="button" class="btn btn-primary" data-act="open-sheet">Add exercise</button>
         </div>`;
     }
@@ -264,7 +265,7 @@ export async function render(root) {
       </div>
       <div class="add-sets">
         <button type="button" class="chip-btn" data-act="add-warmup">+ Warm-up</button>
-        <button type="button" class="chip-btn" data-act="add-top">+ Top set</button>
+        <button type="button" class="chip-btn" data-act="add-top">+ Set</button>
         <button type="button" class="chip-btn" data-act="add-backoff">+ Back-off</button>
       </div>
       ${next
@@ -282,7 +283,7 @@ export async function render(root) {
           <div class="eyebrow">Exercise details</div>
           <button type="button" class="text-btn" data-act="close-sheet">Cancel</button>
         </div>
-        <form ${formAttrs(ex)} data-form="edit">
+        <form ${formAttrs()} data-form="edit">
           ${detailFields(ex, { open: true })}
           <button type="submit" class="btn btn-primary">Save details</button>
         </form>
@@ -294,6 +295,8 @@ export async function render(root) {
     if (!sheetOpen) return '';
     const counts = Object.fromEntries(detail.items.map((it) => [it.id, setsOf(it).length]));
     const cur = currentItem();
+    const inSession = new Set(detail.items.map((it) => it.exerciseId));
+    const saved = exercises.filter((e) => !inSession.has(e.id));
     return `
       <div class="sheet-backdrop" data-act="close-sheet"></div>
       <div class="sheet" role="dialog" aria-label="Exercises in this workout">
@@ -309,12 +312,15 @@ export async function render(root) {
             </button>
             ${counts[it.id] ? '' : `<button type="button" class="wk-icon" data-act="remove-exercise" data-se="${it.id}" aria-label="Remove ${esc(it.exercise?.name)}">${ICON.close}</button>`}
           </div>`).join('')}</div>` : ''}
+        ${saved.length ? `
+          <div class="eyebrow">Add one of yours</div>
+          <div class="pick-list">${saved.map((e) => `<button type="button" class="chip-btn" data-act="add-saved" data-id="${e.id}">+ ${esc(e.name)}</button>`).join('')}</div>` : ''}
         <form ${formAttrs()} data-form="add">
-          <div class="eyebrow">Add exercise</div>
+          <div class="eyebrow">New exercise</div>
           ${detailFields({}, { names: exercises.map((e) => e.name) })}
-          <div class="note">Details only apply to new exercises; edit a saved one from its card. Bar and plate-loaded lifts show the plates per side.</div>
           <button type="submit" class="btn btn-primary">Add exercise</button>
         </form>
+        ${session.workoutId ? `<div class="note">Exercises you add here are added to ${esc(session.name || 'this workout')} for next time. Removing one only affects today; change the workout itself from Today.</div>` : ''}
       </div>`;
   }
 
@@ -346,8 +352,8 @@ export async function render(root) {
     draw();
   }
 
-  function startRestFor(type) {
-    st.rest = { ...startRest(restFor(type, settings), Date.now()), alerted: false };
+  function startRestTimer() {
+    st.rest = { ...startRest(REST_SEC, Date.now()), alerted: false };
     saveState(st);
   }
 
@@ -356,7 +362,12 @@ export async function render(root) {
     const earlier = allSetsOf(it);
     const set = await logSet(it, values);
     if (values.planIndex !== undefined) st.plans[it.id].splice(values.planIndex, 1);
-    startRestFor(values.type);
+    // A lift with no history was planned at the start weight: the sets still to come follow this one.
+    if (values.type === 'top' && !lastSets(it).length) {
+      for (const p of st.plans[it.id]) if (p.type === 'top') Object.assign(p, { weightKg: set.weightKg, reps: set.reps });
+      saveState(st);
+    }
+    startRestTimer();
     if (values.type === 'top') {
       const pr = prFor(set, earlier);
       const last = topSetOf(lastSets(it));
@@ -377,9 +388,10 @@ export async function render(root) {
     const rows = rowsOf(it);
     const top = rows.find((r) => r.type === 'top');
     const ofType = rows.filter((r) => r.type === type);
+    // Copy the set of this type you just finished; with none logged yet, the last one planned.
+    const ref = setsOf(it).filter((s) => s.type === type).at(-1) || ofType.at(-1);
     let row;
-    if (ofType.length) {
-      const ref = ofType.at(-1);
+    if (ref) {
       row = { type, weightKg: ref.weightKg, reps: ref.reps };
       if (ref.toFailure && type !== 'warmup') row.toFailure = true;
     } else if (type === 'top') {
@@ -457,6 +469,14 @@ export async function render(root) {
     'add-warmup': () => addPlanned('warmup'),
     'add-top': () => addPlanned('top'),
     'add-backoff': () => addPlanned('backoff'),
+    'add-saved': async (el) => {
+      const ex = exercises.find((e) => e.id === el.dataset.id);
+      if (!ex) return;
+      const se = await addExerciseToSession(session.id, { name: ex.name });
+      st.current = se.id;
+      sheetOpen = false;
+      await refresh();
+    },
     'rest-add': () => { st.rest = { ...extendRest(st.rest, 30, Date.now()), alerted: false }; saveState(st); draw(); },
     'rest-skip': () => { st.rest = null; saveState(st); draw(); },
     finish: async () => {
@@ -508,7 +528,6 @@ export async function render(root) {
     if (ev.target.dataset?.field) ev.target.select();
   });
 
-  trackMuscleOrder(root);
   root.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const form = ev.target;
@@ -520,7 +539,8 @@ export async function render(root) {
         st.current = se.id;
         sheetOpen = false;
       } else {
-        await updateExercise(currentItem().exercise, readDetails(form));
+        const ex = currentItem().exercise;
+        await updateExercise(ex, readDetails(form, ex));
         editingExercise = false;
         toast('Details saved.');
       }

@@ -5,7 +5,7 @@ import { groupLabel, shortDate, fmtDuration, fmtSet, headlineSet, prSetIds, matc
 import { esc, toast } from '../ui.js';
 
 const SEARCH_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
-const BADGE = { warmup: 'W', top: 'TOP', backoff: 'BO' };
+const BADGE = { warmup: 'W', top: 'SET', backoff: 'BO' };
 
 let query = ''; // kept while switching tabs
 
@@ -14,11 +14,12 @@ export async function render(root) {
   let prs = prSetIds(all.sets);
   const open = new Set();
 
-  const sessionText = (s) => [shortDate(s.startedAt), ...(all.bySession.get(s.id) || []).map((it) => searchText(it.exercise))].join(' ');
+  const sessionText = (s) => [shortDate(s.startedAt), s.name || '', ...(all.bySession.get(s.id) || []).map((it) => searchText(it.exercise))].join(' ');
 
   function card(s) {
     const items = (all.bySession.get(s.id) || []).filter((it) => it.sets.length);
-    const title = `${shortDate(s.startedAt)}${items[0] ? ` · ${items[0].exercise?.name}` : ''}`;
+    const label = s.name || items[0]?.exercise?.name;
+    const title = `${shortDate(s.startedAt)}${label ? ` · ${label}` : ''}`;
     const expanded = open.has(s.id);
     return `
       <div class="hist-card${expanded ? ' open' : ''}">

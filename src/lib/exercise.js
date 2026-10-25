@@ -1,4 +1,4 @@
-// Exercise details: equipment, target muscles, angle, grip and setup. Pure: no DOM or browser globals.
+// Exercise details: equipment, muscle group, angle, grip and setup. Pure: no DOM or browser globals.
 // Ids are what gets saved; labels are only for display, so they can be reworded freely.
 
 export const EQUIPMENT = [
@@ -15,28 +15,25 @@ export const EQUIPMENT = [
   ['band', 'Band'],
 ];
 
+// Muscle groups (schema 3). Kept broad on purpose so picking one is a single tap.
 export const MUSCLES = [
-  ['upper-chest', 'Upper chest'],
-  ['mid-chest', 'Mid chest'],
-  ['lower-chest', 'Lower chest'],
-  ['front-delts', 'Front delts'],
-  ['side-delts', 'Side delts'],
-  ['rear-delts', 'Rear delts'],
-  ['lats', 'Lats'],
-  ['upper-back', 'Upper back'],
-  ['traps', 'Traps'],
-  ['lower-back', 'Lower back'],
-  ['biceps', 'Biceps'],
-  ['triceps', 'Triceps'],
-  ['forearms', 'Forearms'],
-  ['abs', 'Abs'],
-  ['obliques', 'Obliques'],
-  ['glutes', 'Glutes'],
-  ['quads', 'Quads'],
-  ['hamstrings', 'Hamstrings'],
-  ['adductors', 'Adductors'],
-  ['abductors', 'Abductors'],
-  ['calves', 'Calves'],
+  ['chest', 'Chest'],
+  ['back', 'Back'],
+  ['shoulders', 'Shoulders'],
+  ['arms', 'Arms'],
+  ['legs', 'Legs'],
+  ['core', 'Core'],
+];
+
+// Schema 2's detailed muscles and the group each one became. Frozen: only the migrations use them.
+const MUSCLES_V2 = [
+  ['upper-chest', 'Upper chest', 'chest'], ['mid-chest', 'Mid chest', 'chest'], ['lower-chest', 'Lower chest', 'chest'],
+  ['front-delts', 'Front delts', 'shoulders'], ['side-delts', 'Side delts', 'shoulders'], ['rear-delts', 'Rear delts', 'shoulders'],
+  ['lats', 'Lats', 'back'], ['upper-back', 'Upper back', 'back'], ['traps', 'Traps', 'back'], ['lower-back', 'Lower back', 'back'],
+  ['biceps', 'Biceps', 'arms'], ['triceps', 'Triceps', 'arms'], ['forearms', 'Forearms', 'arms'],
+  ['abs', 'Abs', 'core'], ['obliques', 'Obliques', 'core'],
+  ['glutes', 'Glutes', 'legs'], ['quads', 'Quads', 'legs'], ['hamstrings', 'Hamstrings', 'legs'],
+  ['adductors', 'Adductors', 'legs'], ['abductors', 'Abductors', 'legs'], ['calves', 'Calves', 'legs'],
 ];
 
 export const POSITIONS = [
@@ -110,6 +107,22 @@ export function searchText(exercise) {
   return [exercise?.name, detailLine(exercise), musclesLine(exercise)].join(' ');
 }
 
+// Words in a lift's name that give its equipment away, checked in order.
+const EQUIPMENT_WORDS = [
+  [/\bsmith\b/, 'smith'], [/\bez\b|\bez[- ]?bar\b/, 'ezbar'], [/\btrap[- ]?bar\b|\bhex\b/, 'trapbar'],
+  [/\bcable\b|\bpush[- ]?down\b|\bpull[- ]?down\b|\bface pull\b/, 'cable'],
+  [/\bdumbbells?\b|\bdb\b/, 'dumbbell'], [/\bkettlebells?\b|\bkb\b/, 'kettlebell'],
+  [/\bmachine\b|\bpec deck?\b|\bleg (press|extension|curl)\b/, 'machine'],
+  [/\b(pull|chin|push)[- ]?ups?\b|\bdips?\b|\bplank\b/, 'bodyweight'],
+  [/\bband(ed)?\b/, 'band'],
+];
+
+/** Equipment for a lift nobody picked one for, guessed from its name; barbell if nothing matches. */
+export function guessEquipment(name) {
+  const n = String(name ?? '').toLowerCase();
+  return EQUIPMENT_WORDS.find(([re]) => re.test(n))?.[1] || 'barbell';
+}
+
 const pick = (list, v) => (list.some(([k]) => k === v) ? v : undefined);
 
 /**
@@ -120,7 +133,7 @@ export function cleanDetails(input) {
   const out = {};
   const name = String(input.name ?? '').trim().replace(/\s+/g, ' ');
   if (name) out.name = name;
-  out.equipment = pick(EQUIPMENT, input.equipment) || 'barbell';
+  out.equipment = pick(EQUIPMENT, input.equipment) || guessEquipment(name);
   const muscles = [...new Set((input.muscles || []).filter((m) => pick(MUSCLES, m)))];
   if (muscles.length) out.muscles = muscles;
   for (const [key, list] of [['position', POSITIONS], ['grip', GRIPS], ['width', WIDTHS], ['attachment', ATTACHMENTS]]) {
@@ -150,10 +163,22 @@ export function migrateExerciseV2(e) {
   const out = { ...e };
   if (typeof e.muscleGroup === 'string' && e.muscleGroup.trim()) {
     const text = e.muscleGroup.trim();
-    const hit = MUSCLES.find(([id, l]) => id === text.toLowerCase() || l.toLowerCase() === text.toLowerCase());
+    const hit = MUSCLES_V2.find(([id, l]) => id === text.toLowerCase() || l.toLowerCase() === text.toLowerCase());
     if (hit) out.muscles = [hit[0]];
     else out.setup = [e.setup, text].filter(Boolean).join(' · ');
   }
   delete out.muscleGroup;
+  return out;
+}
+
+/**
+ * Schema 3 migration for one exercise record: the detailed muscles become muscle groups, in the
+ * same order (primary first) with repeats dropped. Ids that are already groups are kept.
+ */
+export function migrateExerciseV3(e) {
+  if (!Array.isArray(e.muscles)) return { ...e };
+  const groups = e.muscles.map((m) => (pick(MUSCLES, m) || MUSCLES_V2.find(([id]) => id === m)?.[2])).filter(Boolean);
+  const out = { ...e, muscles: [...new Set(groups)] };
+  if (!out.muscles.length) delete out.muscles;
   return out;
 }

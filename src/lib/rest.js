@@ -8,10 +8,8 @@
  * @property {number} totalSec  full length, for the progress bar
  */
 
-/** Rest length for a set type, from settings.restSeconds. */
-export function restFor(type, settings) {
-  return settings?.restSeconds?.[type] ?? 120;
-}
+/** Rest after every set, in seconds. +30s on the timer covers the odd longer rest. */
+export const REST_SEC = 60;
 
 export function startRest(sec, now) {
   return { endsAt: now + sec * 1000, totalSec: sec };

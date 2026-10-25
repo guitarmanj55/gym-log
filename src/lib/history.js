@@ -96,25 +96,6 @@ export function recentTopSets(sets, limit = 5) {
   return [...latest.values()].sort((a, b) => b.completedAt - a.completedAt).slice(0, limit);
 }
 
-/**
- * Which past session to repeat next, from finished sessions with their lift lists:
- * [{id, startedAt, exerciseIds: string[]}]. Finds the last time today's latest lineup was done
- * and picks whatever came after it, so A/B and A/B/C rotations carry on by themselves.
- * Falls back to the session before last if its lineup differs, then to the last one.
- * @returns {string|null} session id
- */
-export function nextTemplate(sessions) {
-  const list = sessions.filter((s) => s.exerciseIds.length).sort((a, b) => a.startedAt - b.startedAt);
-  if (!list.length) return null;
-  const key = (s) => [...s.exerciseIds].sort().join('|');
-  const last = list.at(-1);
-  for (let i = list.length - 2; i >= 0; i--) {
-    if (key(list[i]) === key(last)) return list[i + 1].id;
-  }
-  const prev = list.at(-2);
-  return prev && key(prev) !== key(last) ? prev.id : last.id;
-}
-
 /** True if every word of the query appears in the text (case-insensitive). */
 export function matchesQuery(text, query) {
   const hay = text.toLowerCase();

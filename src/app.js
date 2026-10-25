@@ -8,8 +8,9 @@ import * as lift from './screens/lift.js';
 import * as backup from './screens/backup.js';
 import * as active from './screens/active.js';
 import * as summary from './screens/summary.js';
+import * as workout from './screens/workout.js';
 
-const SCREENS = { today, history, lift, backup, active, summary };
+const SCREENS = { today, history, lift, backup, active, summary, workout };
 const NO_TABS = new Set(['active']); // full-screen, like the design
 const DEFAULT_SCREEN = 'today';
 const VERSION_KEY = 'gymlog_version';
@@ -20,8 +21,9 @@ let renderId = 0;
 async function route() {
   const name = location.hash.slice(1).split('/')[0];
   const key = SCREENS[name] ? name : DEFAULT_SCREEN;
+  const tab = key === 'workout' ? 'today' : key; // the workout editor is opened from Today
   for (const a of document.querySelectorAll('#tabs a')) {
-    if (a.dataset.tab === key) a.setAttribute('aria-current', 'page');
+    if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
   const id = ++renderId;
