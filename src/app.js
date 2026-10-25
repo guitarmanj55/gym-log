@@ -47,10 +47,13 @@ async function route() {
 /** Warning dot on the Backup tab while a backup is overdue (iOS web apps can't notify without a push server). */
 async function markBackupTab() {
   try {
-    const status = backupStatus(await getSettings(), await count('sessions'), Date.now(), getCloud().lastAt);
+    const cloud = getCloud();
+    const status = backupStatus(await getSettings(), await count('sessions'), Date.now(), cloud.lastAt);
+    // With automatic backup on, only a failing upload is worth a dot.
+    const alert = cloud.key ? Boolean(cloud.error) : status.overdue;
     const tab = document.querySelector('#tabs a[data-tab=backup]');
-    tab.classList.toggle('alert', status.overdue);
-    tab.setAttribute('aria-label', status.overdue ? 'Backup, overdue' : 'Backup');
+    tab.classList.toggle('alert', alert);
+    tab.setAttribute('aria-label', alert ? 'Backup, needs attention' : 'Backup');
   } catch { /* storage unavailable: no dot */ }
 }
 

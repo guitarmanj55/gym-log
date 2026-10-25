@@ -76,7 +76,11 @@ async function run(force) {
   // Mid-workout the phone locks between sets; finishing uploads once instead of a copy per set.
   if (!force && backup.sessions.some((s) => !s.endedAt)) return 'in-workout';
   const hash = await sha256(backupFingerprint(backup));
-  if (!force && hash === lastHash) return 'unchanged';
+  if (!force && hash === lastHash) {
+    // Nothing new, but the cloud copy is current: that still counts as backed up today.
+    setCloud({ lastAt: Date.now(), error: null });
+    return 'unchanged';
+  }
   try {
     await request('/backups', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(backup) });
   } catch (err) {
