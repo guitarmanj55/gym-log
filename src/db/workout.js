@@ -221,3 +221,12 @@ export async function moveSession(sessionId, days) {
     ...sets.map((s) => ['sets', { ...s, completedAt: shiftDays(s.completedAt, days) }]),
   ]);
 }
+
+/** Renames a session (what History shows as its title). An empty name goes back to the first lift's name. */
+export async function renameSession(sessionId, name) {
+  const session = await get('sessions', sessionId);
+  const clean = String(name ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
+  const next = { ...session };
+  if (clean) next.name = clean; else delete next.name;
+  return put('sessions', next);
+}

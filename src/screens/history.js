@@ -1,5 +1,5 @@
 // History: finished workouts by week, with search. Tap a workout to see every set.
-import { loadAll, discardSession, updateSet, deleteSet, moveSession } from '../db/workout.js';
+import { loadAll, discardSession, updateSet, deleteSet, moveSession, renameSession } from '../db/workout.js';
 import { searchText } from '../lib/exercise.js';
 import { groupLabel, shortDate, fmtDuration, fmtSet, headlineSet, prSetIds, matchesQuery, dateInputValue, dayDiff, parseAmount } from '../lib/history.js';
 import { esc, toast, fmtKg } from '../ui.js';
@@ -44,6 +44,7 @@ export async function render(root) {
           <div class="note">Tap a set to fix or delete it.</div></div>` : ''}
         ${expanded ? `<div class="hist-actions">
           <a class="text-btn" href="#summary/${s.id}">Summary &amp; share</a>
+          <button type="button" class="text-btn" data-act="edit-name" data-id="${s.id}">Rename</button>
           <button type="button" class="text-btn" data-act="edit-date" data-id="${s.id}">Change date</button>
           <button type="button" class="text-btn danger" data-act="delete" data-id="${s.id}">Delete this workout</button>
         </div>` : ''}
@@ -70,6 +71,18 @@ export async function render(root) {
 
   const sheetHtml = () => {
     if (!sheet) return '';
+    if (sheet.kind === 'name') {
+      const s = all.finished.find((x) => x.id === sheet.id);
+      return `
+        <div class="sheet-backdrop" data-act="close"></div>
+        <div class="sheet" role="dialog" aria-label="Rename workout">
+          <div class="sheet-head"><div class="eyebrow">Rename workout</div><button type="button" class="text-btn" data-act="close">Cancel</button></div>
+          <label class="field"><span class="field-label">Title</span>
+            <input class="text-input" name="title" type="text" maxlength="60" autocomplete="off" enterkeyhint="done" value="${esc(s.name || '')}" placeholder="${esc((all.bySession.get(s.id) || [])[0]?.exercise?.name || 'Workout')}"></label>
+          <div class="note">Leave it empty to use the first lift's name.</div>
+          <button type="button" class="btn btn-primary" data-act="save-name">Save title</button>
+        </div>`;
+    }
     if (sheet.kind === 'date') {
       const s = all.finished.find((x) => x.id === sheet.id);
       return `
@@ -145,6 +158,13 @@ export async function render(root) {
       } else if (act === 'edit-set') {
         sheet = { kind: 'set', id };
         redraw();
+      } else if (act === 'edit-name') {
+        sheet = { kind: 'name', id };
+        redraw();
+      } else if (act === 'save-name') {
+        await renameSession(sheet.id, field('title').value);
+        await reload();
+        toast('Title saved.');
       } else if (act === 'edit-date') {
         sheet = { kind: 'date', id };
         redraw();
