@@ -10,7 +10,7 @@ import { e1rm } from '../lib/e1rm.js';
 import { prSetIds } from '../lib/history.js';
 import { prFor } from '../lib/feedback.js';
 import { platesPerSide, floorToStep } from '../lib/plates.js';
-import { beats } from '../lib/suggest.js';
+import { beats, beatTargets } from '../lib/suggest.js';
 import { lastSessionSets, topSetOf, planFromLast, remainingPlan, buildRows, insertIndex } from '../lib/plan.js';
 import { REST_SEC, startRest, remainingSec, restProgress, extendRest, fmtClock } from '../lib/rest.js';
 import { loadsPlates, barKgFor, startKgFor, detailLine, musclesLine } from '../lib/exercise.js';
@@ -195,11 +195,19 @@ export async function render(root) {
     if (editor.type === 'top') {
       const now = Math.round(e1rm(w, editor.reps));
       const top = topSetOf(lastSets(it));
+      const best = Math.round(Math.max(0, ...(history[it.exerciseId] || []).filter((s) => s.type === 'top' && s.sessionId !== session.id).map((s) => e1rm(s.weightKg, s.reps))));
+      const bestText = best ? ` · best ${best}` : '';
       if (top) {
         const diff = now - Math.round(e1rm(top.weightKg, top.reps));
-        first = `<div class="live-e1rm">e1RM ${now} kg · ${diff === 0 ? 'same as last' : `${diff > 0 ? '+' : '−'}${Math.abs(diff)} vs last`}</div>`;
+        first = `<div class="live-e1rm">e1RM ${now} kg · ${diff === 0 ? 'same as last' : `${diff > 0 ? '+' : '−'}${Math.abs(diff)} vs last`}${bestText}</div>`;
+        if (!editor.set) {
+          const targets = beatTargets(top, settings.stepKg);
+          if (targets.length) {
+            first += `<div class="targets" role="group" aria-label="Ways to beat last time"><span class="targets-label">Beat last time</span>${targets.map((t) => `<button type="button" class="target-chip" data-act="target" data-kg="${t.weightKg}" data-reps="${t.reps}">${fmtKg(t.weightKg)} × ${t.reps}</button>`).join('')}</div>`;
+          }
+        }
       } else {
-        first = `<div class="live-e1rm">e1RM ${now} kg</div>`;
+        first = `<div class="live-e1rm">e1RM ${now} kg${bestText}</div>`;
       }
     }
     let plates = '';
@@ -449,6 +457,7 @@ export async function render(root) {
     'kg+': () => { editor.weightKg = Math.round((editor.weightKg + settings.stepKg) * 100) / 100; syncPlan(); draw(); },
     'reps-': () => { editor.reps = Math.max(0, editor.reps - 1); syncPlan(); draw(); },
     'reps+': () => { editor.reps = Math.min(999, editor.reps + 1); syncPlan(); draw(); },
+    target: (el) => { editor.weightKg = Number(el.dataset.kg); editor.reps = Number(el.dataset.reps); syncPlan(); draw(); },
     failure: () => { editor.toFailure = !editor.toFailure; syncPlan(); draw(); },
     log: async () => { await log(editor); },
     save: async () => {

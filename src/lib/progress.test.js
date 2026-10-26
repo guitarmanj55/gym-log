@@ -87,3 +87,8 @@ test('stallInfo counts sessions since the best e1RM', () => {
   assert.deepEqual(stallInfo(pts(100, 105, 104, 103)), { sessions: 2, best: 105, stalled: false });
   assert.equal(stallInfo(pts(100, 105, 104, 103, 102), 4)?.stalled, false);
 });
+
+test('stallInfo: a slow climb without a new best is not a stall', () => {
+  assert.equal(stallInfo(pts(100, 105, 101, 102, 103, 104, 104))?.stalled, false);
+  assert.equal(stallInfo(pts(90, 104, 100, 101, 100, 101, 100, 101))?.stalled, true);
+});

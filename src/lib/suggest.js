@@ -1,6 +1,8 @@
 // The "beat last time" rule. Pure: no DOM or browser globals.
 // There is deliberately no program or progression engine: just add a step or a rep.
 
+import { e1rm } from './e1rm.js';
+
 const round = (kg) => Math.round(kg * 100) / 100;
 
 /**
@@ -23,4 +25,22 @@ export function beats(set, last) {
   const heavier = round(set.weightKg) > round(last.weightKg);
   const same = round(set.weightKg) === round(last.weightKg);
   return (heavier && set.reps >= last.reps) || (same && set.reps > last.reps);
+}
+
+/**
+ * Weight and rep combinations that beat a previous e1RM: for each rep count around `reps`, the
+ * lightest weight (in steps of `stepKg`) whose e1RM is higher once rounded to a whole kg.
+ * @param {{weightKg: number, reps: number} | null | undefined} last  previous top set
+ * @returns {Array<{weightKg: number, reps: number}>} fewest reps first; [] with nothing to beat
+ */
+export function beatTargets(last, stepKg = 2.5, spread = 2) {
+  if (!last || !(last.weightKg > 0) || !(last.reps > 0) || !(stepKg > 0)) return [];
+  const target = Math.round(e1rm(last.weightKg, last.reps));
+  const out = [];
+  for (let reps = Math.max(1, last.reps - spread); reps <= last.reps + spread; reps++) {
+    let weightKg = round(Math.floor((target / (1 + (reps === 1 ? 0 : reps / 30))) / stepKg) * stepKg);
+    while (Math.round(e1rm(weightKg, reps)) <= target) weightKg = round(weightKg + stepKg);
+    out.push({ weightKg, reps });
+  }
+  return out;
 }

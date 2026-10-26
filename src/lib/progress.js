@@ -138,7 +138,9 @@ export function chartGeometry(points, { width = 350, height = 150, left = 10, ri
 
 /**
  * Has the e1RM stopped improving? Counts the sessions since the best one (whole kg, so 0.4 kg of
- * noise isn't progress). Stalled from `minSessions` onwards; null with too little history.
+ * noise isn't progress). Stalled from `minSessions` onwards, unless the last three sessions average
+ * clearly higher than the three before: a slow climb without a new best isn't a stall.
+ * Null with too little history.
  * @param points  topSetPoints(), oldest first
  * @returns {?{sessions: number, best: number, stalled: boolean}}
  */
@@ -147,5 +149,7 @@ export function stallInfo(points, minSessions = 3) {
   const vals = points.map((p) => Math.round(p.e1rm));
   const best = Math.max(...vals);
   const sessions = vals.length - 1 - vals.indexOf(best);
-  return { sessions, best, stalled: sessions >= minSessions };
+  const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const climbing = vals.length >= 6 && mean(vals.slice(-3)) - mean(vals.slice(-6, -3)) >= 1;
+  return { sessions, best, stalled: sessions >= minSessions && !climbing };
 }
