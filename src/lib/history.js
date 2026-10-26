@@ -128,3 +128,26 @@ export function parseAmount(text) {
   const n = Number(String(text ?? '').trim().replace(',', '.'));
   return String(text ?? '').trim() !== '' && Number.isFinite(n) && n >= 0 ? n : null;
 }
+
+/**
+ * Workouts started in each of the last `weeks` weeks (Monday to Sunday), oldest first, the
+ * current week last.
+ * @returns {Array<{start: number, count: number}>}
+ */
+export function weeklyCounts(sessionStarts, now, weeks = 8) {
+  const thisWeek = weekStart(now);
+  const out = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const d = new Date(thisWeek);
+    d.setDate(d.getDate() - 7 * i); // calendar days, so a clock change doesn't shift the week
+    out.push({ start: d.getTime(), count: 0 });
+  }
+  const end = new Date(thisWeek);
+  end.setDate(end.getDate() + 7);
+  for (const t of sessionStarts) {
+    if (t >= end.getTime()) continue;
+    const week = out.findLast((w) => t >= w.start);
+    if (week) week.count++;
+  }
+  return out;
+}

@@ -153,3 +153,20 @@ export function stallInfo(points, minSessions = 3) {
   const climbing = vals.length >= 6 && mean(vals.slice(-3)) - mean(vals.slice(-6, -3)) >= 1;
   return { sessions, best, stalled: sessions >= minSessions && !climbing };
 }
+
+/**
+ * Heaviest top set for at least N reps, for a few common rep counts. A 100 × 8 also counts as
+ * the best for 5 reps unless something heavier was done for 5 or more. Ties go to the later set.
+ * @returns {Array<{reps: number, set: ?object}>}  set is null when nothing reached that many reps
+ */
+export function repBests(sets, repCounts = [3, 5, 8, 10]) {
+  const tops = sets.filter((s) => s.type === 'top' && s.reps > 0);
+  return repCounts.map((reps) => {
+    let best = null;
+    for (const s of tops) {
+      if (s.reps < reps) continue;
+      if (!best || s.weightKg > best.weightKg || (s.weightKg === best.weightKg && s.completedAt >= best.completedAt)) best = s;
+    }
+    return { reps, set: best };
+  });
+}

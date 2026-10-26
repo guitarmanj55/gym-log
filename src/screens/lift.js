@@ -2,7 +2,7 @@
 import { getAll } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
 import { prSetIds, fmtSet } from '../lib/history.js';
-import { RANGES, rangeStart, topSetPoints, changeLabel, liftStats, chartGeometry, stallInfo } from '../lib/progress.js';
+import { RANGES, rangeStart, topSetPoints, changeLabel, liftStats, chartGeometry, stallInfo, repBests } from '../lib/progress.js';
 import { detailLine, musclesLine } from '../lib/exercise.js';
 import { updateExercise } from '../db/workout.js';
 import { detailFields, formAttrs, readDetails } from './exercise-form.js';
@@ -78,6 +78,7 @@ export async function render(root) {
     const stats = liftStats(points);
     const stall = stallInfo(allPoints);
     const bw = lift.equipment === 'bodyweight';
+    const bests = repBests(liftSets).filter((r) => r.set);
 
     root.innerHTML = `
       <div class="screen lift">
@@ -111,6 +112,18 @@ export async function render(root) {
               <div class="tile"><div class="tile-label">Reps at ${fmtKg(stats.atKg)} kg</div><div class="tile-val">${stats.repsAt}</div></div>
               <div class="tile"><div class="tile-label">Sets</div><div class="tile-val">${stats.count}</div></div>
             </div>
+            ${bests.length ? `
+            <div class="recent">
+              <div class="eyebrow">Rep bests · all time</div>
+              ${bests.map((r) => `
+                <div class="th-row">
+                  <div class="th-left">
+                    <span class="th-date">${r.reps}+ reps</span>
+                    <span class="th-set">${fmtSet(r.set, lift.equipment)}</span>
+                  </div>
+                  <div class="muted">${dayMonth(r.set.completedAt)}</div>
+                </div>`).join('')}
+            </div>` : ''}
             <div class="recent">
               <div class="eyebrow">Best set each workout</div>
               ${[...points].reverse().map((p) => `

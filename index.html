@@ -135,6 +135,11 @@ a.btn{text-decoration:none}
 .muscle-name{font-size:15px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .muscle-track{height:8px;border-radius:4px;background:var(--surface)}
 .muscle-bar{height:8px;border-radius:4px;background:var(--accent);min-width:4px}
+.weeks{display:flex;align-items:flex-end;gap:8px;height:84px}
+.wk-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px}
+.wk-n{font-family:var(--font-num);font-size:16px;font-weight:600;color:var(--muted);min-height:18px}
+.wk-bar{width:100%;border-radius:4px;background:var(--line)}
+.wk-bar.now{background:var(--accent)}
 .muscle-n{font-family:var(--font-num);font-size:20px;font-weight:700;text-align:right}
 .wo-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
 .wo-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -377,8 +382,8 @@ a.banner{text-decoration:none;color:inherit}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.13";
-var APP_WHATS_NEW = "calmer logging screen with a Last / This set / Best summary, targets behind one button, lighter grey text and an orange warning colour";
+var APP_VERSION = "0.14";
+var APP_WHATS_NEW = "rep bests on each lift, workouts-per-week bars on Today, and volume against the last time on the workout summary";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

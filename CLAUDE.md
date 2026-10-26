@@ -39,6 +39,10 @@ e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 - `sw.js`, `manifest.webmanifest`, `icons/`
 - `design/` the approved screens, exported as images or PDF
 
+## State of play
+- **v0.14 (2026-10-26):** Lift screen gains "Rep bests · all time" (heaviest top set for 3+/5+/8+/10+ reps, `repBests` in `progress.js`). Today gains "Workouts per week" bars for the last 8 weeks (`weeklyCounts` in `history.js`). The summary shows volume against the last finished session of the same saved workout (`volumeChange` in `feedback.js`). No schema change. Checked in the preview at 390x844 with seeded data; not tried on the iPhone.
+- Backlog ideas: volume change in the shared summary text; a per-workout volume trend; rep bests for bodyweight lifts need a look (they show added kg).
+
 ## Design reference
 The approved screens are in `design/` as PNGs (Today, Active workout, Lift progress, History, Backup), with exact styling in `design/source/*.html`. Match their styling. Since v0.9 Today shows saved workouts instead of the "Up next" card in the design. The numbers shown in the designs are sample data only. The PNGs use fallback fonts, so trust the real fonts (Barlow, Barlow Condensed) and the source HTML for sizing.
 

@@ -3,7 +3,7 @@
 import { loadAll, startSession, listWorkouts } from '../db/workout.js';
 import { getSettings } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
-import { weekStrip, relativeDay, fmtSet, recentTopSets } from '../lib/history.js';
+import { weekStrip, relativeDay, fmtSet, recentTopSets, weeklyCounts } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
 import { weeklyMuscleSets, fmtSetCount, staleLifts, stalledLifts } from '../lib/feedback.js';
 import { unlockAudio } from '../device.js';
@@ -77,6 +77,8 @@ export async function render(root) {
     </a>` : '';
 
   const strip = weekStrip(all.sessions.filter((s) => s.endedAt || s === active).map((s) => s.startedAt), now);
+  const weeks = weeklyCounts(all.sessions.filter((s) => s.endedAt || s === active).map((s) => s.startedAt), now, 8);
+  const weekMax = Math.max(1, ...weeks.map((w) => w.count));
   const recent = recentTopSets(all.sets, 5);
   const muscles = weeklyMuscleSets(all.sets, all.exercises, now);
   const most = muscles.rows[0]?.sets || 1;
@@ -138,6 +140,18 @@ export async function render(root) {
             </div>`).join('')}
         </div>
       </div>
+      ${weeks.some((w) => w.count) ? `
+      <div class="stack">
+        <div class="eyebrow">Workouts per week</div>
+        <div class="weeks" role="img" aria-label="Workouts per week, last 8 weeks: ${weeks.map((w) => w.count).join(', ')}">
+          ${weeks.map((w, i) => `
+            <div class="wk-col">
+              <div class="wk-n">${w.count || ''}</div>
+              <div class="wk-bar${i === weeks.length - 1 ? ' now' : ''}" style="height:${Math.max(4, Math.round((w.count / weekMax) * 56))}px"></div>
+            </div>`).join('')}
+        </div>
+        <div class="note">Last 8 weeks, this week on the right.</div>
+      </div>` : ''}
       ${muscleBlock}
       ${stalledBlock}
       ${staleBlock}

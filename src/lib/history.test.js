@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  weekStart, weekStrip, groupLabel, relativeDay, fmtDuration, fmtSet, headlineSet, prSetIds, recentTopSets, matchesQuery,
+  weekStart, weekStrip, groupLabel, relativeDay, fmtDuration, fmtSet, headlineSet, prSetIds, recentTopSets, matchesQuery, weeklyCounts,
 } from './history.js';
 
 const at = (y, m, d, h = 12) => new Date(y, m - 1, d, h).getTime();
@@ -111,4 +111,12 @@ test('parseAmount', () => {
   assert.equal(parseAmount(''), null);
   assert.equal(parseAmount('abc'), null);
   assert.equal(parseAmount('-3'), null);
+});
+
+test('weeklyCounts: sessions per week, current week last', () => {
+  const starts = [at(2026, 10, 19), at(2026, 10, 21), at(2026, 10, 14), at(2026, 10, 12), at(2026, 10, 13), at(2026, 8, 1), at(2026, 10, 26)];
+  const counts = weeklyCounts(starts, NOW, 4);
+  assert.equal(counts.length, 4);
+  assert.deepEqual(counts.map((w) => w.count), [0, 0, 3, 2]); // 1 Aug is too old, 26 Oct is next week
+  assert.equal(counts.at(-1).start, new Date(2026, 9, 19).getTime());
 });

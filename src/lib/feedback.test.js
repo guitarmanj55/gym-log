@@ -100,7 +100,7 @@ test('fmtChange', () => {
   assert.equal(fmtChange(-2), '−2');
 });
 
-import { stalledLifts } from './feedback.js';
+import { stalledLifts, volumeChange } from './feedback.js';
 
 test('stalledLifts flags lifts with no new best for 3 sessions, recent ones only', () => {
   const day = 24 * 60 * 60 * 1000;
@@ -114,4 +114,12 @@ test('stalledLifts flags lifts with no new best for 3 sessions, recent ones only
   ];
   const out = stalledLifts(sets, exercises, NOW);
   assert.deepEqual(out.map((x) => [x.exercise.name, x.sessions]), [['Bench', 3]]);
+});
+
+test('volumeChange is a whole percentage against the last time', () => {
+  assert.equal(volumeChange(5400, 5000), 8);
+  assert.equal(volumeChange(4500, 5000), -10);
+  assert.equal(volumeChange(5000, 5000), 0);
+  assert.equal(volumeChange(5000, 0), null);
+  assert.equal(volumeChange(5000, undefined), null);
 });

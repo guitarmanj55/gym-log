@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rangeStart, topSetPoints, changeLabel, liftStats, trend, niceTicks, chartGeometry } from './progress.js';
+import { rangeStart, topSetPoints, changeLabel, liftStats, trend, niceTicks, chartGeometry, repBests } from './progress.js';
 
 const at = (y, m, d) => new Date(y, m - 1, d, 18).getTime();
 const top = (sessionId, weightKg, reps, completedAt, type = 'top') => ({ id: `${sessionId}${completedAt}`, sessionId, type, weightKg, reps, completedAt });
@@ -91,4 +91,16 @@ test('stallInfo counts sessions since the best e1RM', () => {
 test('stallInfo: a slow climb without a new best is not a stall', () => {
   assert.equal(stallInfo(pts(100, 105, 101, 102, 103, 104, 104))?.stalled, false);
   assert.equal(stallInfo(pts(90, 104, 100, 101, 100, 101, 100, 101))?.stalled, true);
+});
+
+test('repBests: heaviest top set for at least N reps', () => {
+  const sets = [top('a', 100, 8, 1), top('b', 110, 5, 2), top('c', 120, 3, 3), top('d', 125, 1, 4), top('e', 60, 12, 5, 'warmup')];
+  const by = Object.fromEntries(repBests(sets).map((r) => [r.reps, r.set?.weightKg ?? null]));
+  assert.deepEqual(by, { 3: 120, 5: 110, 8: 100, 10: null });
+});
+
+test('repBests: a tie goes to the later set, and empty input gives empty rows', () => {
+  const sets = [top('a', 100, 5, 1), top('b', 100, 6, 2)];
+  assert.equal(repBests(sets, [5])[0].set.sessionId, 'b');
+  assert.equal(repBests([], [5])[0].set, null);
 });

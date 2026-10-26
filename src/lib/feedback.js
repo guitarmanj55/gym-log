@@ -155,3 +155,12 @@ export function stalledLifts(sets, exercises, now, { minSessions = 3, withinDays
   }
   return out.sort((a, b) => b.sessions - a.sessions || a.exercise.name.localeCompare(b.exercise.name));
 }
+
+/**
+ * Volume against the last time the same workout was done, as a whole percentage.
+ * Null when there is nothing to compare or the earlier volume was zero.
+ */
+export function volumeChange(volumeKg, previousKg) {
+  if (!(previousKg > 0)) return null;
+  return Math.round(((volumeKg - previousKg) / previousKg) * 100);
+}
