@@ -68,6 +68,7 @@ export async function render(root) {
   let exercises = await listExercises();
   const history = {}; // exerciseId -> every set of that lift
   let editor = null;  // { key, type, weightKg, reps, toFailure, set?, planIndex? }
+  let showTargets = false; // the "ways to beat last time" chips are open
   let sheetOpen = detail.items.length === 0;
   let editingExercise = false; // the sheet shows the current exercise's details form
   let busy = false;
@@ -158,8 +159,7 @@ export async function render(root) {
 
   function lastLine(it) {
     const top = topSetOf(lastSets(it));
-    if (!top) return '<div class="wk-last">First time logging this lift</div>';
-    return `<div class="wk-last">Last time · ${fmtKg(top.weightKg)} kg × ${top.reps} · e1RM ${Math.round(e1rm(top.weightKg, top.reps))} kg</div>`;
+    return top ? '' : '<div class="wk-last">First time logging this lift</div>';
   }
 
   function detailsLine(it) {
@@ -196,18 +196,20 @@ export async function render(root) {
       const now = Math.round(e1rm(w, editor.reps));
       const top = topSetOf(lastSets(it));
       const best = Math.round(Math.max(0, ...(history[it.exerciseId] || []).filter((s) => s.type === 'top' && s.sessionId !== session.id).map((s) => e1rm(s.weightKg, s.reps))));
-      const bestText = best ? ` · best ${best}` : '';
-      if (top) {
-        const diff = now - Math.round(e1rm(top.weightKg, top.reps));
-        first = `<div class="live-e1rm">e1RM ${now} kg · ${diff === 0 ? 'same as last' : `${diff > 0 ? '+' : '−'}${Math.abs(diff)} vs last`}${bestText}</div>`;
-        if (!editor.set) {
-          const targets = beatTargets(top, settings.stepKg);
-          if (targets.length) {
-            first += `<div class="targets" role="group" aria-label="Ways to beat last time"><span class="targets-label">Beat last time</span>${targets.map((t) => `<button type="button" class="target-chip" data-act="target" data-kg="${t.weightKg}" data-reps="${t.reps}">${fmtKg(t.weightKg)} × ${t.reps}</button>`).join('')}</div>`;
-          }
+      const lastE = top ? Math.round(e1rm(top.weightKg, top.reps)) : null;
+      const diff = lastE === null ? null : now - lastE;
+      const tile = (label, value, sub, cls = '') => `<div class="sum-tile${cls}"><small>${label}</small><b>${value}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+      first = `<div class="summary">${[
+        top ? tile('Last', lastE, `${fmtKg(top.weightKg)} × ${top.reps}`) : '',
+        tile('This set', now, diff === null ? '' : diff === 0 ? 'same' : `${diff > 0 ? '+' : '−'}${Math.abs(diff)}`, diff > 0 ? ' up' : diff < 0 ? ' down' : ''),
+        best ? tile('Best', best, '') : '',
+      ].join('')}</div>`;
+      if (top && !editor.set) {
+        const targets = beatTargets(top, settings.stepKg);
+        if (targets.length) {
+          first += `<button type="button" class="targets-toggle" data-act="targets" aria-expanded="${showTargets}">Ways to beat last time</button>`;
+          if (showTargets) first += `<div class="targets" role="group" aria-label="Ways to beat last time">${targets.map((t) => `<button type="button" class="target-chip" data-act="target" data-kg="${t.weightKg}" data-reps="${t.reps}">${fmtKg(t.weightKg)} × ${t.reps}</button>`).join('')}</div>`;
         }
-      } else {
-        first = `<div class="live-e1rm">e1RM ${now} kg${bestText}</div>`;
       }
     }
     let plates = '';
@@ -457,6 +459,7 @@ export async function render(root) {
     'kg+': () => { editor.weightKg = Math.round((editor.weightKg + settings.stepKg) * 100) / 100; syncPlan(); draw(); },
     'reps-': () => { editor.reps = Math.max(0, editor.reps - 1); syncPlan(); draw(); },
     'reps+': () => { editor.reps = Math.min(999, editor.reps + 1); syncPlan(); draw(); },
+    targets: () => { showTargets = !showTargets; draw(); },
     target: (el) => { editor.weightKg = Number(el.dataset.kg); editor.reps = Number(el.dataset.reps); syncPlan(); draw(); },
     failure: () => { editor.toFailure = !editor.toFailure; syncPlan(); draw(); },
     log: async () => { await log(editor); },
