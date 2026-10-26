@@ -7,6 +7,7 @@ import { weekStrip, relativeDay, fmtSet, recentTopSets } from '../lib/history.js
 import { backupStatus } from '../lib/backup.js';
 import { weeklyMuscleSets, fmtSetCount, staleLifts, stalledLifts } from '../lib/feedback.js';
 import { unlockAudio } from '../device.js';
+import { getCloud } from '../cloud.js';
 import { esc, longDate, toast, versionLine } from '../ui.js';
 
 const timeOf = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
@@ -62,13 +63,16 @@ export async function render(root) {
       ${active ? '' : '<button type="button" class="text-btn" data-act="start-empty">Or start an empty workout</button>'}
     </div>`;
 
-  const backup = backupStatus(settings, all.finished.length, now);
-  const reminder = backup.overdue && !active ? `
+  const cloud = getCloud();
+  const backup = backupStatus(settings, all.finished.length, now, cloud.lastAt);
+  // With automatic backup on, only a failing upload is worth a warning (same rule as the tab dot).
+  const needsBackup = cloud.key ? Boolean(cloud.error) : backup.overdue;
+  const reminder = needsBackup && !active ? `
     <a class="banner warn" href="#backup">
       <div class="dot"></div>
       <div>
-        <div class="banner-title">${esc(backup.title)}</div>
-        <div class="banner-sub">${esc(backup.sub)} · tap to export</div>
+        <div class="banner-title">${esc(cloud.key ? 'Automatic backup is failing' : backup.title)}</div>
+        <div class="banner-sub">${esc(cloud.key ? cloud.error : `${backup.sub} · tap to export`)}</div>
       </div>
     </a>` : '';
 
