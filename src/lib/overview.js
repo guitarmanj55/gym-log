@@ -3,6 +3,7 @@ import { rangeStart, stallInfo } from './progress.js';
 
 export const METRICS = ['progress', 'effort'];
 const WEEK = 7 * 86400000;
+export const SMOOTH_SESSIONS = 3;
 
 /** Monday 00:00 local of the week containing t. */
 function weekStart(t) {
@@ -21,6 +22,11 @@ function weeks(from, to) {
 }
 
 const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+const median = (xs) => {
+  const a = [...xs].sort((x, y) => x - y);
+  const m = a.length >> 1;
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+};
 const round1 = (v) => Math.round(v * 10) / 10;
 
 /**
@@ -80,8 +86,11 @@ export function overview(lifts, range, now, metric = 'progress') {
     };
   }).sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
 
+  // Progress headline: each lift's current level is the median of its last 3 sessions (when it has
+  // more than that), so one bad day doesn't swing it.
+  const current = (l) => (l.inRange.length > SMOOTH_SESSIONS ? median(l.inRange.slice(-SMOOTH_SESSIONS).map((p) => p.e1rm)) : l.inRange.at(-1).e1rm);
   const headline = metric === 'progress'
-    ? round1(series.at(-1).e1rm - 100)
+    ? round1(mean(used.map((l) => (current(l) / l.base) * 100)) - 100)
     : round1(mean(used.flatMap((l) => l.inRange.map((p) => (p.e1rm / l.best) * 100))));
   return { series, headline, rows, hidden };
 }

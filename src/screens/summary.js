@@ -1,7 +1,7 @@
 // Workout summary: shown after Finish (and from History). Each lift's best set, e1RM change and PRs,
 // the totals, and a Share button that sends the summary as text.
 import { loadAll } from '../db/workout.js';
-import { sessionSummary, summaryText, fmtChange, volumeChange } from '../lib/feedback.js';
+import { sessionSummary, summaryText, fmtChange, volumeChange, workoutVolumes } from '../lib/feedback.js';
 import { shortDate, fmtDuration, fmtSet } from '../lib/history.js';
 import { esc, toast, versionLine } from '../ui.js';
 
@@ -25,6 +25,10 @@ export async function render(root) {
   // Against the last time the same workout was done (finished is newest first).
   const prev = session.workoutId ? all.finished.find((s) => s.workoutId === session.workoutId && s.startedAt < session.startedAt) : null;
   const vol = prev ? volumeChange(sum.volumeKg, sessionSummary(prev, all.bySession.get(prev.id) || [], all.sets).volumeKg) : null;
+  if (vol !== null) sum.volumeVs = { pct: vol, name: session.name || 'time' };
+  const volumeOf = (s) => sessionSummary(s, all.bySession.get(s.id) || [], all.sets).volumeKg;
+  const trend = workoutVolumes(all.finished.filter((s) => s.startedAt <= session.startedAt), session.workoutId, volumeOf, 8);
+  const trendMax = Math.max(1, ...trend.map((t) => t.volumeKg));
   // Built before the tap: iOS only opens the share sheet straight from a user gesture.
   const text = summaryText(sum);
   const justNow = Date.now() - session.endedAt < 60 * 60 * 1000;
@@ -46,6 +50,17 @@ export async function render(root) {
         <div class="tile"><div class="tile-label">Volume kg</div><div class="tile-val">${sum.volumeKg.toLocaleString('en-GB')}</div></div>
       </div>
       ${vol === null ? '' : `<div class="note">Volume <b class="${vol > 0 ? 'accent' : ''}">${vol === 0 ? 'same as' : `${vol > 0 ? '+' : '−'}${Math.abs(vol)}% vs`}</b> last ${esc(session.name || 'time')}.</div>`}
+      ${trend.length >= 3 ? `
+      <div class="stack">
+        <div class="eyebrow">Volume · last ${trend.length} ${esc(session.name || 'sessions')}</div>
+        <div class="weeks">
+          ${trend.map((t) => `
+            <div class="wk-col">
+              <div class="wk-n">${t.id === session.id ? Math.round(t.volumeKg / 100) / 10 + 'k' : ''}</div>
+              <div class="wk-bar${t.id === session.id ? ' now' : ''}" style="height:${Math.max(4, Math.round((t.volumeKg / trendMax) * 52))}px"></div>
+            </div>`).join('')}
+        </div>
+      </div>` : ''}
       <div class="recent">
         <div class="eyebrow">Best set per lift · e1RM vs last time</div>
         ${sum.lifts.map((l) => `

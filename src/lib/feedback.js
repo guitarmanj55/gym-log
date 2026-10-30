@@ -131,7 +131,9 @@ export function summaryText(sum) {
     if (l.e1rm !== null && l.equipment !== 'bodyweight') bits.push(`e1RM ${l.e1rm}${l.change !== null ? ` ${fmtChange(l.change)}` : ''}`);
     lines.push(`${l.name}: ${l.headline ? fmtSet(l.headline, l.equipment) : ''}${bits.length ? ` (${bits.join(', ')})` : ''}${l.pr ? ' PR' : ''}`);
   }
+  const vs = sum.volumeVs ? `${fmtVolumeChange(sum.volumeVs.pct)} volume vs last ${sum.volumeVs.name}` : '';
   lines.push('', `${sum.sets} sets · ${sum.volumeKg.toLocaleString('en-GB')} kg moved${sum.prCount ? ` · ${sum.prCount} PR${sum.prCount > 1 ? 's' : ''}` : ''}`);
+  if (vs) lines.push(vs);
   return lines.join('\n');
 }
 
@@ -163,4 +165,22 @@ export function stalledLifts(sets, exercises, now, { minSessions = 3, withinDays
 export function volumeChange(volumeKg, previousKg) {
   if (!(previousKg > 0)) return null;
   return Math.round(((volumeKg - previousKg) / previousKg) * 100);
+}
+
+/** "+8%", "−10%", "same" */
+export function fmtVolumeChange(pct) {
+  return pct === 0 ? 'same' : `${pct > 0 ? '+' : '−'}${Math.abs(pct)}%`;
+}
+
+/**
+ * Volume of the last `limit` finished sessions of one saved workout, oldest first.
+ * @param {Array} finished  finished sessions, any order
+ * @param {(session) => number} volumeOf
+ * @returns {Array<{id, startedAt, volumeKg}>}
+ */
+export function workoutVolumes(finished, workoutId, volumeOf, limit = 8) {
+  if (!workoutId) return [];
+  return finished.filter((s) => s.workoutId === workoutId)
+    .sort((a, b) => a.startedAt - b.startedAt).slice(-limit)
+    .map((s) => ({ id: s.id, startedAt: s.startedAt, volumeKg: volumeOf(s) }));
 }

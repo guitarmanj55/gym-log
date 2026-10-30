@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { overview } from './overview.js';
+import { overview, SMOOTH_SESSIONS } from './overview.js';
 
 const DAY = 86400000;
 const now = new Date(2026, 9, 28, 12).getTime(); // Wed 28 Oct 2026
@@ -68,4 +68,12 @@ test('stalled flag comes from the whole history', () => {
   const pts = [[70, 118], [60, 120], [50, 110], [40, 112], [30, 111], [10, 112]];
   const o = overview([lift('a', 'A', pts)], '3M', now);
   assert.equal(o.rows[0].stalled, true);
+});
+
+test('progress: headline uses the median of the last 3 sessions, so one bad day does not swing it', () => {
+  assert.equal(SMOOTH_SESSIONS, 3);
+  const steady = lift('a', 'A', [[28, 100], [21, 104], [14, 108], [7, 112], [0, 90]]); // last session was a bad day
+  const o = overview([steady], '3M', now);
+  assert.equal(o.headline, 8); // median(108, 112, 90) = 108
+  assert.equal(o.rows[0].pct, -10); // the row still shows the latest session
 });

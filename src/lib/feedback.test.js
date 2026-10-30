@@ -100,7 +100,7 @@ test('fmtChange', () => {
   assert.equal(fmtChange(-2), '−2');
 });
 
-import { stalledLifts, volumeChange } from './feedback.js';
+import { stalledLifts, volumeChange, workoutVolumes, fmtVolumeChange } from './feedback.js';
 
 test('stalledLifts flags lifts with no new best for 3 sessions, recent ones only', () => {
   const day = 24 * 60 * 60 * 1000;
@@ -122,4 +122,20 @@ test('volumeChange is a whole percentage against the last time', () => {
   assert.equal(volumeChange(5000, 5000), 0);
   assert.equal(volumeChange(5000, 0), null);
   assert.equal(volumeChange(5000, undefined), null);
+});
+
+test('fmtVolumeChange and the share text carry the volume change', () => {
+  assert.equal(fmtVolumeChange(8), '+8%');
+  assert.equal(fmtVolumeChange(-10), '−10%');
+  assert.equal(fmtVolumeChange(0), 'same');
+  const base = { startedAt: Date.UTC(2026, 9, 28), durationMs: 3600000, lifts: [], sets: 12, volumeKg: 5400, prCount: 0 };
+  assert.ok(!summaryText(base).includes('vs last'));
+  assert.ok(summaryText({ ...base, volumeVs: { pct: 8, name: 'Push' } }).endsWith('+8% volume vs last Push'));
+});
+
+test('workoutVolumes: last sessions of one saved workout, oldest first', () => {
+  const finished = [1, 2, 3, 4].map((n) => ({ id: `s${n}`, workoutId: n === 3 ? 'other' : 'w', startedAt: n * 1000 })).reverse();
+  const out = workoutVolumes(finished, 'w', (s) => Number(s.id.slice(1)) * 100, 2);
+  assert.deepEqual(out.map((o) => [o.id, o.volumeKg]), [['s2', 200], ['s4', 400]]);
+  assert.deepEqual(workoutVolumes(finished, null, () => 0), []);
 });
