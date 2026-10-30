@@ -27,10 +27,11 @@ export function detailFields(ex = {}, { withName = true, names = [], open = fals
       ${names.length ? `<datalist id="exercise-names">${names.map((n) => `<option value="${esc(n)}">`).join('')}</datalist>` : ''}` : ''}
     <div class="field-label">Muscle group</div>
     ${chips('muscle', MUSCLES, ex.muscles?.[0], { none: 'None' })}
+    <div class="field-label">Equipment</div>
+    ${chips('equipment', EQUIPMENT, eq, { none: eq ? '' : 'From the name' })}
     <details class="more"${open ? ' open' : ''}>
-      <summary>Equipment and setup</summary>
+      <summary>Setup</summary>
       <div class="more-body">
-        ${chips('equipment', EQUIPMENT, eq, { none: eq ? '' : 'From the name' })}
         <label class="check-row"><input type="checkbox" name="unilateral"${ex.unilateral ? ' checked' : ''}><span>One arm or leg at a time</span></label>
         <label class="only-plates field">
           <span class="field-label">Empty bar or sled (kg)</span>
