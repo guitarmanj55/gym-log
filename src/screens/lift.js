@@ -6,10 +6,13 @@ import { RANGES, rangeStart, topSetPoints, changeLabel, liftStats, chartGeometry
 import { detailLine, musclesLine } from '../lib/exercise.js';
 import { updateExercise } from '../db/workout.js';
 import { detailFields, formAttrs, readDetails } from './exercise-form.js';
+import { overviewHtml } from './overview.js';
 import { esc, fmtKg, toast } from '../ui.js';
 
 const LIFT_KEY = 'gymlog_lift';
 const RANGE_KEY = 'gymlog_range';
+const VIEW_KEY = 'gymlog_lifts_view';
+const METRIC_KEY = 'gymlog_lifts_metric';
 const CHEVRON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 
 const remember = (k, v) => { try { localStorage.setItem(k, v); } catch { /* storage blocked */ } };
@@ -41,6 +44,8 @@ export async function render(root) {
   const fromHash = location.hash.split('/')[1];
   let lift = lifts.find((e) => e.id === fromHash) || lifts.find((e) => e.id === recall(LIFT_KEY)) || lifts[0];
   let range = RANGES.includes(recall(RANGE_KEY)) ? recall(RANGE_KEY) : '3M';
+  let view = recall(VIEW_KEY) === 'all' && !fromHash ? 'all' : 'one';
+  let metric = recall(METRIC_KEY) === 'effort' ? 'effort' : 'progress';
   let sheetOpen = false;
   let editing = false;
 
@@ -65,9 +70,27 @@ export async function render(root) {
       </svg>`;
   }
 
+  const viewToggle = () => `
+    <div class="segmented" role="group" aria-label="View">
+      <button type="button" data-act="view" data-view="one" aria-pressed="${view === 'one'}">One lift</button>
+      <button type="button" data-act="view" data-view="all" aria-pressed="${view === 'all'}">All lifts</button>
+    </div>`;
+
+  function drawAll() {
+    root.innerHTML = `
+      <div class="screen lift">
+        <h1 class="title">Lifts</h1>
+        ${viewToggle()}
+        ${overviewHtml({ lifts, sets, range, metric })}
+      </div>`;
+  }
+
   function draw() {
-    remember(LIFT_KEY, lift.id);
+    remember(VIEW_KEY, view);
+    remember(METRIC_KEY, metric);
     remember(RANGE_KEY, range);
+    if (view === 'all') return drawAll();
+    remember(LIFT_KEY, lift.id);
     const liftSets = sets.filter((s) => s.exerciseId === lift.id);
     const allPoints = topSetPoints(liftSets);
     const start = rangeStart(range, Date.now());
@@ -82,6 +105,7 @@ export async function render(root) {
 
     root.innerHTML = `
       <div class="screen lift">
+        ${viewToggle()}
         <div class="lift-head">
           <h1 class="title">${esc(lift.name)}</h1>
           <button type="button" class="chip-btn change-lift" data-act="pick">Change lift ${CHEVRON}</button>
@@ -174,6 +198,14 @@ export async function render(root) {
     else if (act === 'edit') editing = true;
     else if (act === 'close') { sheetOpen = false; editing = false; }
     else if (act === 'range') range = el.dataset.range;
+    else if (act === 'view') view = el.dataset.view;
+    else if (act === 'metric') metric = el.dataset.metric;
+    else if (act === 'open') {
+      lift = lifts.find((e) => e.id === el.dataset.id) || lift;
+      view = 'one';
+      history.replaceState(null, '', `#lift/${lift.id}`);
+      window.scrollTo(0, 0);
+    }
     else if (act === 'choose') {
       lift = lifts.find((e) => e.id === el.dataset.id) || lift;
       sheetOpen = false;

@@ -200,6 +200,12 @@ a.btn{text-decoration:none}
 .e1rm-big .unit{font-family:var(--font-body);font-size:22px;font-weight:500;color:var(--muted)}
 .change-pill{height:32px;padding:0 12px;border-radius:16px;background:#1F2A0E;color:var(--accent);font-size:14px;font-weight:600;display:flex;align-items:center;margin-bottom:10px;white-space:nowrap}
 .change-pill.down{background:var(--warn-bg);color:var(--warn)}
+.ov-row{width:100%;background:none;border:0;border-bottom:1px solid var(--line);color:inherit;font:inherit;text-align:left;padding:6px 0;min-height:56px}
+.ov-row:last-child{border-bottom:none}
+.ov-name{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ov-pill{margin:0;flex:none}
+.ov-stall{font-size:12px;font-weight:700;color:var(--warn);margin-left:6px}
+.ov-note{font-size:14px}
 .segmented{display:flex;gap:4px;background:var(--surface);border-radius:14px;padding:4px}
 .segmented button{flex:1;height:44px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-size:15px;font-weight:600}
 .segmented button[aria-pressed="true"]{background:var(--line);color:var(--text)}
@@ -382,8 +388,8 @@ a.banner{text-decoration:none;color:inherit}
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.14.1";
-var APP_WHATS_NEW = "equipment (Barbell, Dumbbell...) is now always visible when adding an exercise";
+var APP_VERSION = "0.15";
+var APP_WHATS_NEW = "Lifts has a new All lifts view: a strength index across every lift, an average-effort view, and each lift ranked underneath";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

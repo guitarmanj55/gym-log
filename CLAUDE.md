@@ -33,15 +33,17 @@ e1RM uses Epley: `weight * (1 + reps / 30)`; for 1 rep it is just the weight.
 - `src/db/schema.js` stores, indexes, defaults, backup shape and migrations
 - `src/db/` the IndexedDB wrapper (open, get, put, query, export, import)
 - `src/lib/` pure logic and its tests
-- `src/screens/` one module per screen (today, workout editor, active, lift, history, backup, summary)
+- `src/screens/` one module per screen (today, workout editor, active, lift, overview (All lifts view of the Lifts tab), history, backup, summary)
 - `src/cloud.js` automatic backup client; `worker/` the Cloudflare Worker that stores every backup
 - `src/lib/feedback.js` PRs as they're logged, hard sets per muscle this week, lifts not trained lately, the workout summary
 - `sw.js`, `manifest.webmanifest`, `icons/`
 - `design/` the approved screens, exported as images or PDF
 
 ## State of play
-- **v0.14 (2026-10-26):** Lift screen gains "Rep bests · all time" (heaviest top set for 3+/5+/8+/10+ reps, `repBests` in `progress.js`). Today gains "Workouts per week" bars for the last 8 weeks (`weeklyCounts` in `history.js`). The summary shows volume against the last finished session of the same saved workout (`volumeChange` in `feedback.js`). No schema change. Checked in the preview at 390x844 with seeded data; not tried on the iPhone.
-- Backlog ideas: volume change in the shared summary text; a per-workout volume trend; rep bests for bodyweight lifts need a look (they show added kg).
+- **v0.15 (2026-10-30):** Lifts tab gains an "All lifts" view next to "One lift" (`src/screens/overview.js`, pure logic in `src/lib/overview.js`). Progress: each lift indexed to 100 at its first session in the range, weekly mean across lifts, plus each lift's % change ranked underneath. Effort: each session's e1RM as % of that lift's all-time best, weekly mean. Bodyweight lifts are left out (e1RM is added kg); lifts with too little history in the range are counted in a note. No schema change. Checked in the preview at 375 wide with seeded data; not tried on the iPhone.
+- Headline uses the latest week, so one bad day swings it; a smoothed headline is a possible tweak.
+- v0.14 (2026-10-26): Lift screen gains "Rep bests · all time" (heaviest top set for 3+/5+/8+/10+ reps, `repBests` in `progress.js`). Today gains "Workouts per week" bars for the last 8 weeks (`weeklyCounts` in `history.js`). The summary shows volume against the last finished session of the same saved workout (`volumeChange` in `feedback.js`). No schema change. Checked in the preview at 390x844 with seeded data; not tried on the iPhone.
+- Backlog ideas: smoothed strength-index headline; volume change in the shared summary text; a per-workout volume trend; rep bests for bodyweight lifts need a look (they show added kg).
 
 ## Design reference
 The approved screens are in `design/` as PNGs (Today, Active workout, Lift progress, History, Backup), with exact styling in `design/source/*.html`. Match their styling. Since v0.9 Today shows saved workouts instead of the "Up next" card in the design. The numbers shown in the designs are sample data only. The PNGs use fallback fonts, so trust the real fonts (Barlow, Barlow Condensed) and the source HTML for sizing.
