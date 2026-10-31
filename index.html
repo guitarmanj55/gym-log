@@ -222,7 +222,7 @@ a.btn{text-decoration:none}
 .lib-name small{font-size:13px;font-weight:500;color:var(--muted)}
 .lib-add{flex:none;width:44px;height:44px;border-radius:50%;border:none;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;touch-action:manipulation}
 .lib-add.done{background:var(--raised);color:var(--accent)}
-.lib-photos{position:relative;border-radius:16px;overflow:hidden;background:#fff;aspect-ratio:4/3}
+.lib-photos{position:relative;border-radius:16px;overflow:hidden;background:var(--surface);aspect-ratio:3/2}
 .lib-photos img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .lib-photos.flip img:last-child{animation:lib-flip 2.4s ease-in-out infinite}
 @keyframes lib-flip{0%,35%{opacity:0}50%,85%{opacity:1}100%{opacity:0}}
@@ -420,8 +420,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.19";
-var APP_WHATS_NEW = "New Library tab: 137 exercises by muscle group, with photos and steps, and an Add to workout button";
+var APP_VERSION = "0.19.1";
+var APP_WHATS_NEW = "Library photos fill their frame";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

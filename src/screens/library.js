@@ -138,7 +138,7 @@ async function renderDetail(root, e) {
       </div>
       ${backBanner(draft)}
       <div class="lib-photos${photos.length > 1 ? ' flip' : ''}" aria-label="Start and end position">
-        ${photos.map((p, i) => `<img src="${p}" alt="${esc(e.name)}, ${i ? 'end' : 'start'} position" width="400" height="300">`).join('')}
+        ${photos.map((p, i) => `<img src="${p}" alt="${esc(e.name)}, ${i ? 'end' : 'start'} position" width="600" height="400">`).join('')}
       </div>
       <div class="card lib-facts">
         <div><span class="eyebrow">Main muscles</span><div class="lib-val">${esc(e.primary.join(', '))}</div></div>
