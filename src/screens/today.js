@@ -68,7 +68,7 @@ export async function render(root) {
   // With automatic backup on, only a failing upload is worth a warning (same rule as the tab dot).
   const needsBackup = cloud.key ? Boolean(cloud.error) : backup.overdue;
   const reminder = needsBackup && !active ? `
-    <a class="banner warn" href="#backup">
+    <a class="banner warn" href="#profile">
       <div class="dot"></div>
       <div>
         <div class="banner-title">${esc(cloud.key ? 'Automatic backup is failing' : backup.title)}</div>

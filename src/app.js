@@ -6,14 +6,14 @@ import { toast } from './ui.js';
 import * as today from './screens/today.js';
 import * as history from './screens/history.js';
 import * as lift from './screens/lift.js';
-import * as backup from './screens/backup.js';
+import * as profile from './screens/profile.js';
 import * as active from './screens/active.js';
 import * as summary from './screens/summary.js';
 import * as workout from './screens/workout.js';
 import * as library from './screens/library.js';
 import { clearDraft } from './lib/wo-draft.js';
 
-const SCREENS = { today, history, lift, backup, active, summary, workout, library };
+const SCREENS = { today, history, lift, profile, active, summary, workout, library };
 const NO_TABS = new Set(['active']); // full-screen, like the design
 const DEFAULT_SCREEN = 'today';
 const VERSION_KEY = 'gymlog_version';
@@ -47,16 +47,16 @@ async function route() {
   markBackupTab();
 }
 
-/** Warning dot on the Backup tab while a backup is overdue (iOS web apps can't notify without a push server). */
+/** Warning dot on the Profile tab while a backup is overdue (iOS web apps can't notify without a push server). */
 async function markBackupTab() {
   try {
     const cloud = getCloud();
     const status = backupStatus(await getSettings(), await count('sessions'), Date.now(), cloud.lastAt);
     // With automatic backup on, only a failing upload is worth a dot.
     const alert = cloud.key ? Boolean(cloud.error) : status.overdue;
-    const tab = document.querySelector('#tabs a[data-tab=backup]');
+    const tab = document.querySelector('#tabs a[data-tab=profile]');
     tab.classList.toggle('alert', alert);
-    tab.setAttribute('aria-label', alert ? 'Backup, needs attention' : 'Backup');
+    tab.setAttribute('aria-label', alert ? 'Profile, backup needs attention' : 'Profile');
   } catch { /* storage unavailable: no dot */ }
 }
 
