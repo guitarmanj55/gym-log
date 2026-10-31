@@ -252,6 +252,7 @@ a.btn{text-decoration:none}
 .lib-banner .text-btn{min-width:56px;color:var(--accent);font-weight:700}
 .lib-groups{display:flex;flex-wrap:wrap;gap:8px}
 .lib-groups .chip-btn{min-width:0;padding:0 14px}
+.lib-groups .chip-btn[data-plate]{min-width:48px}
 .lib-groups .chip-btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .lib-list{display:flex;flex-direction:column}
 .lib-row{display:flex;align-items:center;gap:8px;min-height:72px;border-bottom:1px solid var(--line)}
@@ -460,8 +461,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.21";
-var APP_WHATS_NEW = "Profile: lifetime stats, training settings, split and next-up hint";
+var APP_VERSION = "0.21.1";
+var APP_WHATS_NEW = "Plate buttons are a full 48px wide";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>
