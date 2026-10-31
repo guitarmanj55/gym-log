@@ -92,6 +92,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   if (navigator.serviceWorker.controller) {
     navigator.serviceWorker.addEventListener('controllerchange', () => location.reload(), { once: true });
   }
+  document.addEventListener('gesturestart', (e) => e.preventDefault()); // no pinch-zoom
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
     // The home-screen app often resumes instead of relaunching, so check for a release on return.
     document.addEventListener('visibilitychange', () => {

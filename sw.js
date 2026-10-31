@@ -2,7 +2,9 @@
    HTML, the manifest and JS modules are network-first so updates arrive as soon as
    you're online; icons and fonts are cache-first. Bump CACHE on every release and
    list every module in SHELL, or the app breaks offline. */
-var CACHE = "gymlog-v26";
+var CACHE = "gymlog-v27";
+/* Vendored Google Fonts (fonts/fonts.css), precached so text looks right offline. */
+var FONTS = ["fonts/Barlow-0.woff2","fonts/Barlow-1.woff2","fonts/Barlow-2.woff2","fonts/BarlowCondensed-3.woff2","fonts/BarlowCondensed-4.woff2","fonts/BarlowCondensed-5.woff2","fonts/fonts.css"];
 var SHELL = [
   "./",
   "index.html",
@@ -44,13 +46,13 @@ var SHELL = [
    still lets it answer 304 Not Modified, so unchanged files cost almost nothing. */
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(CACHE).then(function(cache){
-    return cache.addAll(SHELL.map(function(u){ return new Request(u, {cache: "reload"}); }));
+    return cache.addAll(SHELL.concat(FONTS).map(function(u){ return new Request(u, {cache: "reload"}); }));
   }).then(function(){ return self.skipWaiting(); }));
 });
 
 self.addEventListener("activate", function(e){
   e.waitUntil(caches.keys().then(function(keys){
-    return Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); }));
+    return Promise.all(keys.filter(function(k){ return k !== CACHE && k.indexOf("gymlog-") === 0; }).map(function(k){ return caches.delete(k); }));
   }).then(function(){ return self.clients.claim(); }));
 });
 
@@ -90,7 +92,5 @@ self.addEventListener("fetch", function(e){
     var p = url.pathname;
     if(req.mode === "navigate" || p.endsWith(".html") || p.endsWith(".webmanifest") || p.endsWith(".js")) e.respondWith(networkFirst(req));
     else e.respondWith(cacheFirst(req));
-  } else if(url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com"){
-    e.respondWith(cacheFirst(req));
   }
 });
