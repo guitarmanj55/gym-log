@@ -51,6 +51,7 @@ export async function render(root) {
 
   function chart(points, name) {
     if (!points.length) return `<div class="chart-empty">No sets in this period.</div>`;
+    if (points.length === 1) return `<div class="chart-empty">One session so far. The trend line appears after your next one.</div>`;
     const g = chartGeometry(points);
     const first = Math.round(points[0].e1rm);
     const last = Math.round(points.at(-1).e1rm);

@@ -378,10 +378,18 @@ export async function render(root) {
       for (const p of st.plans[it.id]) if (p.type === 'top') Object.assign(p, { weightKg: set.weightKg, reps: set.reps });
       saveState(st);
     }
+    // First time on a lift: the warm-up you just typed is the best guess for the sets still to come.
+    if (values.type === 'warmup' && !lastSets(it).length && !setsOf(it).some((s) => s.type === 'top')) {
+      for (const p of st.plans[it.id]) if (p.type === 'top') p.weightKg = Math.max(p.weightKg, set.weightKg);
+      saveState(st);
+    }
     startRestTimer();
+    const logged = `${TYPE_LABEL[values.type]} logged: ${fmtKg(set.weightKg)} × ${set.reps}`;
+    if (values.type !== 'top') toast(logged);
     if (values.type === 'top') {
       const pr = prFor(set, earlier);
       const last = topSetOf(lastSets(it));
+      if (!pr && !(last && beats(set, last))) toast(`${logged} · e1RM ${Math.round(e1rm(set.weightKg, set.reps))}`);
       if (pr) {
         // The Log tap is a user gesture, so iOS lets the sound play.
         fanfare();
