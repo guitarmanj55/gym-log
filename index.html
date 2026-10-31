@@ -207,6 +207,30 @@ a.btn{text-decoration:none}
 .segmented{display:flex;gap:4px;background:var(--surface);border-radius:14px;padding:4px}
 .segmented button{flex:1;height:44px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-size:15px;font-weight:600}
 .segmented button[aria-pressed="true"]{background:var(--line);color:var(--text)}
+.lib-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#1F2A0E;color:var(--accent);border-radius:12px;padding:6px 6px 6px 14px;font-size:15px;min-height:48px}
+.lib-banner b{font-weight:700}
+.lib-banner .text-btn{min-width:56px;color:var(--accent);font-weight:700}
+.lib-groups{display:flex;flex-wrap:wrap;gap:8px}
+.lib-groups .chip-btn{min-width:0;padding:0 14px}
+.lib-groups .chip-btn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.lib-list{display:flex;flex-direction:column}
+.lib-row{display:flex;align-items:center;gap:8px;min-height:72px;border-bottom:1px solid var(--line)}
+.lib-row:last-child{border-bottom:none}
+.lib-main{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:8px 0;color:inherit;text-decoration:none}
+.lib-thumb{width:56px;height:56px;flex:none;border-radius:10px;object-fit:cover;background:#fff}
+.lib-name{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:17px;font-weight:600}
+.lib-name small{font-size:13px;font-weight:500;color:var(--muted)}
+.lib-add{flex:none;width:44px;height:44px;border-radius:50%;border:none;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+.lib-add.done{background:var(--raised);color:var(--accent)}
+.lib-photos{position:relative;border-radius:16px;overflow:hidden;background:#fff;aspect-ratio:4/3}
+.lib-photos img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.lib-photos.flip img:last-child{animation:lib-flip 2.4s ease-in-out infinite}
+@keyframes lib-flip{0%,35%{opacity:0}50%,85%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.lib-photos.flip img:last-child{animation:none;opacity:0}}
+.lift-head .lib-title{font-size:34px;line-height:1.05;white-space:normal;overflow:visible}
+.lib-facts{gap:12px}
+.lib-val{font-size:17px;font-weight:600;margin-top:2px}
+.lib-steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;font-size:16px;line-height:1.45}
 .chart{display:block;overflow:visible}
 .c-grid{stroke:var(--line);stroke-width:1}
 .c-text{fill:var(--muted);font-size:11px;font-family:var(--font-body)}
@@ -381,6 +405,10 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>
     <span>Lifts</span>
   </a>
+  <a href="#library" data-tab="library">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5v14M8 5v14"/><rect x="12" y="5" width="4" height="14" rx="1"/><path d="M19 7.5l2 .5-3 11-2-.5"/></svg>
+    <span>Library</span>
+  </a>
   <a href="#backup" data-tab="backup">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>
     <span>Backup</span>
@@ -392,8 +420,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.18.1";
-var APP_WHATS_NEW = "The weekly backup switch is easier to tap";
+var APP_VERSION = "0.19";
+var APP_WHATS_NEW = "New Library tab: 137 exercises by muscle group, with photos and steps, and an Add to workout button";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

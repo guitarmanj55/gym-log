@@ -6,6 +6,7 @@ import {
 import { muscleLabel } from '../lib/exercise.js';
 import { shortDate } from '../lib/history.js';
 import { detailFields, formAttrs, readDetails } from './exercise-form.js';
+import { readDraft, writeDraft, clearDraft } from '../lib/wo-draft.js';
 import { unlockAudio } from '../device.js';
 import { esc, toast } from '../ui.js';
 
@@ -32,6 +33,10 @@ export async function render(root) {
   const [all, active] = await Promise.all([loadAll(), getActiveSession()]);
   let exercises = await listExercises();
   const state = { name: workout?.name || '', ids: [...(workout?.exerciseIds || [])] };
+  // Back from the library: pick up the name and lineup parked before the trip.
+  const draft = readDraft();
+  if (draft && draft.id === (workout?.id || 'new')) { state.name = draft.name; state.ids = draft.ids; }
+  clearDraft();
   let busy = false;
 
   // Recent workouts with different lineups, so an existing routine can be copied in one tap.
@@ -104,6 +109,7 @@ export async function render(root) {
         <div class="wo-list" id="wo-list"></div>
       </div>
       <div class="stack" id="wo-pick"></div>
+      <button type="button" class="btn btn-secondary" data-act="library">Browse exercise library</button>
       <form ${formAttrs()} data-form="new">
         <div class="eyebrow">New exercise</div>
         ${detailFields({}, { names: exercises.map((e) => e.name) })}
@@ -134,6 +140,10 @@ export async function render(root) {
     remove: (el) => { state.ids = state.ids.filter((x) => x !== el.dataset.id); },
     add: (el) => { state.ids.push(el.dataset.id); },
     copy: (el) => { state.ids = [...past[+el.dataset.i].ids]; },
+    library: () => {
+      writeDraft({ id: workout?.id || 'new', name: state.name, ids: state.ids });
+      location.hash = '#library';
+    },
     save: async () => {
       const w = await save();
       toast(`${w.name} saved.`);

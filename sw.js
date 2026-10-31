@@ -2,7 +2,7 @@
    HTML, the manifest and JS modules are network-first so updates arrive as soon as
    you're online; icons and fonts are cache-first. Bump CACHE on every release and
    list every module in SHELL, or the app breaks offline. */
-var CACHE = "gymlog-v28";
+var CACHE = "gymlog-v29";
 /* Vendored Google Fonts (fonts/fonts.css), precached so text looks right offline. */
 var FONTS = ["fonts/Barlow-0.woff2","fonts/Barlow-1.woff2","fonts/Barlow-2.woff2","fonts/BarlowCondensed-3.woff2","fonts/BarlowCondensed-4.woff2","fonts/BarlowCondensed-5.woff2","fonts/fonts.css"];
 var SHELL = [
@@ -23,6 +23,9 @@ var SHELL = [
   "src/lib/e1rm.js",
   "src/lib/exercise.js",
   "src/lib/feedback.js",
+  "src/lib/library.js",
+  "src/lib/library-data.js",
+  "src/lib/wo-draft.js",
   "src/lib/history.js",
   "src/lib/overview.js",
   "src/lib/plan.js",
@@ -35,6 +38,7 @@ var SHELL = [
   "src/screens/today.js",
   "src/screens/history.js",
   "src/screens/lift.js",
+  "src/screens/library.js",
   "src/screens/overview.js",
   "src/screens/backup.js",
   "src/screens/summary.js",
@@ -55,6 +59,20 @@ self.addEventListener("activate", function(e){
     return Promise.all(keys.filter(function(k){ return k !== CACHE && k.indexOf("gymlog-") === 0; }).map(function(k){ return caches.delete(k); }));
   }).then(function(){ return self.clients.claim(); }));
 });
+
+/* Exercise photos (about 10 MB) live in their own cache, which isn't a "gymlog-" one, so a release
+   never throws them away. Every photo that is opened (or saved from the Library) stays for good. */
+var PHOTOS = "gymphotos-v1";
+function photoFirst(req){
+  return caches.open(PHOTOS).then(function(c){
+    return c.match(req).then(function(hit){
+      return hit || fetch(req).then(function(res){
+        if(res.ok){ c.put(req, res.clone()); }
+        return res;
+      });
+    });
+  });
+}
 
 function cacheFirst(req){
   return caches.match(req).then(function(hit){
@@ -90,7 +108,8 @@ self.addEventListener("fetch", function(e){
   var url = new URL(req.url);
   if(url.origin === location.origin){
     var p = url.pathname;
-    if(req.mode === "navigate" || p.endsWith(".html") || p.endsWith(".webmanifest") || p.endsWith(".js")) e.respondWith(networkFirst(req));
+    if(p.indexOf("/library/") !== -1 && p.endsWith(".jpg")) e.respondWith(photoFirst(req));
+    else if(req.mode === "navigate" || p.endsWith(".html") || p.endsWith(".webmanifest") || p.endsWith(".js")) e.respondWith(networkFirst(req));
     else e.respondWith(cacheFirst(req));
   }
 });

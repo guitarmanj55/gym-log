@@ -10,8 +10,10 @@ import * as backup from './screens/backup.js';
 import * as active from './screens/active.js';
 import * as summary from './screens/summary.js';
 import * as workout from './screens/workout.js';
+import * as library from './screens/library.js';
+import { clearDraft } from './lib/wo-draft.js';
 
-const SCREENS = { today, history, lift, backup, active, summary, workout };
+const SCREENS = { today, history, lift, backup, active, summary, workout, library };
 const NO_TABS = new Set(['active']); // full-screen, like the design
 const DEFAULT_SCREEN = 'today';
 const VERSION_KEY = 'gymlog_version';
@@ -27,6 +29,7 @@ async function route() {
     if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   }
+  if (key !== 'library' && key !== 'workout') clearDraft(); // a half-built workout is only kept while browsing the library
   const id = ++renderId;
   const view = document.createElement('div');
   try {
