@@ -15,7 +15,7 @@ import { lastSessionSets, topSetOf, planFromLast, remainingPlan, buildRows, inse
 import { REST_SEC, startRest, remainingSec, restProgress, extendRest, fmtClock } from '../lib/rest.js';
 import { loadsPlates, barKgFor, startKgFor, detailLine, musclesLine } from '../lib/exercise.js';
 import { detailFields, formAttrs, readDetails } from './exercise-form.js';
-import { keepAwake, unlockAudio, beep, fanfare } from '../device.js';
+import { keepAwake, unlockAudio, beep, fanfare, setSoundOn } from '../device.js';
 import { esc, toast, flash, fmtKg } from '../ui.js';
 import { autoBackup } from '../cloud.js';
 
@@ -63,6 +63,7 @@ export async function render(root) {
   }
 
   const settings = await getSettings();
+  setSoundOn(settings.sound);
   const st = loadState(session.id);
   let detail = await getSessionDetail(session.id);
   let exercises = await listExercises();
@@ -364,7 +365,7 @@ export async function render(root) {
   }
 
   function startRestTimer() {
-    st.rest = { ...startRest(REST_SEC, Date.now()), alerted: false };
+    st.rest = { ...startRest(settings.restSec || REST_SEC, Date.now()), alerted: false };
     saveState(st);
   }
 

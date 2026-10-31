@@ -13,7 +13,7 @@ export const LIBRARY_GROUPS = [
 ];
 
 // Library group -> the broad muscle group stored on an exercise (schema 3 has one "arms").
-const STORED_MUSCLE = { chest: 'chest', biceps: 'arms', triceps: 'arms', shoulders: 'shoulders', back: 'back', legs: 'legs' };
+export const STORED_MUSCLE ={ chest: 'chest', biceps: 'arms', triceps: 'arms', shoulders: 'shoulders', back: 'back', legs: 'legs' };
 
 export const groupLabel = (id) => LIBRARY_GROUPS.find(([k]) => k === id)?.[1] || '';
 

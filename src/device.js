@@ -30,6 +30,12 @@ document.addEventListener('visibilitychange', () => {
 // The Vibration API does not exist on iOS, so the screen also shows a visual cue.
 
 let ctx = null;
+let soundOn = true;
+
+/** The Profile "Rest timer sound" switch: off silences the rest beep and the PR fanfare. */
+export function setSoundOn(on) {
+  soundOn = on !== false;
+}
 
 export function unlockAudio() {
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -45,7 +51,7 @@ export function unlockAudio() {
 
 /** Plays [delay s, frequency Hz, length s] notes. */
 function notes(list, type = 'sine') {
-  if (!ctx) return;
+  if (!ctx || !soundOn) return;
   if (ctx.state !== 'running') ctx.resume().catch(() => {});
   const t0 = ctx.currentTime + 0.05;
   for (const [d, freq, len] of list) {

@@ -242,6 +242,8 @@ a.btn{text-decoration:none}
 .ov-pill{margin:0;flex:none}
 .ov-stall{font-size:12px;font-weight:700;color:var(--warn);margin-left:6px}
 .ov-note{font-size:14px}
+.split-add{display:flex;align-items:center;gap:10px}
+.split-add select{flex:1;min-width:0}
 .segmented{display:flex;gap:4px;background:var(--surface);border-radius:14px;padding:4px}
 .segmented button{flex:1;height:44px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-size:15px;font-weight:600}
 .segmented button[aria-pressed="true"]{background:var(--line);color:var(--text)}
@@ -458,8 +460,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.20";
-var APP_WHATS_NEW = "Profile tab with a Light/Dark theme, simpler backup";
+var APP_VERSION = "0.21";
+var APP_WHATS_NEW = "Profile: lifetime stats, training settings, split and next-up hint";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

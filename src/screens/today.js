@@ -6,6 +6,8 @@ import { e1rm } from '../lib/e1rm.js';
 import { weekStrip, relativeDay, fmtSet, recentTopSets, weeklyCounts } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
 import { weeklyMuscleSets, fmtSetCount, staleLifts, stalledLifts } from '../lib/feedback.js';
+import { nextSplit, splitLabel } from '../lib/profile.js';
+import { groupLabel } from '../lib/library.js';
 import { unlockAudio } from '../device.js';
 import { getCloud } from '../cloud.js';
 import { esc, longDate, toast, versionLine } from '../ui.js';
@@ -52,8 +54,19 @@ export async function render(root) {
       </div>`;
   }).join('');
 
+  const next = active ? null : nextSplit(settings.splits, all.sets, all.exercises, now);
+  const nextBlock = next ? `
+    <a class="banner ok" href="#profile">
+      <div class="dot"></div>
+      <div>
+        <div class="banner-title">Train next: ${esc(splitLabel(next.split))}</div>
+        <div class="banner-sub">${next.days === null ? `No ${esc(groupLabel(next.split.main).toLowerCase())} logged yet` : `${esc(groupLabel(next.split.main))} last trained ${next.days === 1 ? 'yesterday' : `${next.days} days ago`}`}</div>
+      </div>
+    </a>` : '';
+
   const workoutBlock = `
     <div class="stack">
+      ${nextBlock}
       <div class="eyebrow">Your workouts</div>
       ${workouts.length ? workoutCards : `
         <div class="card">
@@ -124,8 +137,9 @@ export async function render(root) {
   root.innerHTML = `
     <div class="screen today">
       <div>
-        <div class="date">${esc(longDate(now))}</div>
+        <div class="date">${settings.name ? `${esc(settings.name)} · ` : ''}${esc(longDate(now))}</div>
         <h1 class="title">Today</h1>
+        ${settings.goal ? `<div class="note">Goal: ${esc(settings.goal)}</div>` : ''}
       </div>
       ${reminder}
       ${resume}

@@ -82,7 +82,14 @@ export const DEFAULT_SETTINGS = {
   plates: [25, 20, 15, 10, 5, 2.5, 1.25],
   stepKg: 2.5,
   backupReminder: true,
+  restSec: 60,
+  sound: true,
+  name: '',
+  goal: '',
+  splits: [], // [{ main, support }] training pairings, group ids from SPLIT_GROUPS
 };
+
+export const SPLIT_GROUPS = ['chest', 'biceps', 'triceps', 'shoulders', 'back', 'legs'];
 
 // store name -> { keyPath, indexes: [[indexName, keyPath, options?]] }
 export const STORES = {
@@ -143,6 +150,16 @@ export const DATA_STORES = ['exercises', 'workouts', 'sessions', 'sessionExercis
 /** Settings from storage or a backup, with any missing fields filled from DEFAULT_SETTINGS. */
 export function normaliseSettings(s) {
   const out = { ...DEFAULT_SETTINGS, ...(s && typeof s === 'object' ? s : {}), id: 'settings' };
+  const num = (v, min, max, fallback) => (Number.isFinite(v) && v >= min && v <= max ? v : fallback);
+  out.restSec = Math.round(num(out.restSec, 15, 600, DEFAULT_SETTINGS.restSec));
+  out.stepKg = num(out.stepKg, 0.25, 25, DEFAULT_SETTINGS.stepKg);
+  out.barWeightKg = num(out.barWeightKg, 0, 50, DEFAULT_SETTINGS.barWeightKg);
+  out.sound = out.sound !== false;
+  out.name = typeof out.name === 'string' ? out.name.trim().slice(0, 30) : '';
+  out.goal = typeof out.goal === 'string' ? out.goal.trim().slice(0, 80) : '';
+  out.splits = (Array.isArray(out.splits) ? out.splits : [])
+    .filter((p) => p && SPLIT_GROUPS.includes(p.main) && SPLIT_GROUPS.includes(p.support) && p.main !== p.support)
+    .map((p) => ({ main: p.main, support: p.support }));
   return out;
 }
 

@@ -1,14 +1,37 @@
-// Profile: theme, automatic cloud backup and restore, and a backup file export.
+// Profile: you, lifetime stats, training split and settings, theme, and backup (automatic cloud
+// backup and restore, plus a backup file export).
 import { exportBackup, importBackup, getSettings, saveSettings, count } from '../db/db.js';
-import { backupFileName } from '../db/schema.js';
+import { loadAll } from '../db/workout.js';
+import { backupFileName, SPLIT_GROUPS } from '../db/schema.js';
 import { backupStatus } from '../lib/backup.js';
+import { groupLabel } from '../lib/library.js';
+import {
+  BAR_OPTIONS, STEP_OPTIONS, REST_OPTIONS, PLATE_CHOICES, withCurrent, togglePlate, fmtRest, fmtVolume,
+  lifetimeStats, splitLabel,
+} from '../lib/profile.js';
+import { unlockAudio, beep, setSoundOn } from '../device.js';
 import { getCloud, connect, disconnect, listBackups, fetchBackup, backupNow, markBackedUp } from '../cloud.js';
 import { esc, toast, fmtBytes, versionLine } from '../ui.js';
 
 const THEMES = [['auto', 'Auto'], ['dark', 'Dark'], ['light', 'Light']];
+const fmtNum = (n) => String(Math.round(n * 100) / 100);
+const longDay = (ms) => new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+
+/** A row of single-choice buttons that saves `key` straight away. */
+function choice(label, key, options, current, fmt = fmtNum) {
+  return `
+    <div class="field">
+      <span class="field-label">${label}</span>
+      <div class="segmented" role="group" aria-label="${label}">
+        ${withCurrent(options, current).map((v) => `<button type="button" data-set="${key}" data-val="${v}" aria-pressed="${v === current}">${fmt(v)}</button>`).join('')}
+      </div>
+    </div>`;
+}
 
 export async function render(root) {
-  const [settings, sessions, backup] = await Promise.all([getSettings(), count('sessions'), exportBackup()]);
+  const [settings, sessions, backup, all] = await Promise.all([getSettings(), count('sessions'), exportBackup(), loadAll()]);
+  const stats = lifetimeStats(all.finished, all.sets, all.exercises, Date.now());
+  const plateList = [...new Set([...PLATE_CHOICES, ...settings.plates])].sort((a, b) => b - a);
   // Built before the tap: iOS only allows the share sheet straight from a user gesture.
   const file = new File([JSON.stringify(backup, null, 1)], backupFileName(Date.now()), { type: 'application/json' });
   const cloud = getCloud();
@@ -19,8 +42,64 @@ export async function render(root) {
     <div class="screen">
       <h1 class="title">Profile</h1>
 
+      <div class="eyebrow">You</div>
+      <div class="stack">
+        <label class="field">
+          <span class="field-label">Name</span>
+          <input class="text-input" name="name" type="text" maxlength="30" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="Your name" value="${esc(settings.name)}">
+        </label>
+        <label class="field">
+          <span class="field-label">Goal</span>
+          <input class="text-input" name="goal" type="text" maxlength="80" autocomplete="off" enterkeyhint="done" placeholder="e.g. Bench 100 kg by March" value="${esc(settings.goal)}">
+        </label>
+      </div>
+
+      <div class="eyebrow">Lifetime</div>
+      ${stats.sessions ? `
+      <div class="tiles">
+        <div class="tile"><div class="tile-label">Workouts</div><div class="tile-val">${stats.sessions}</div></div>
+        <div class="tile"><div class="tile-label">Lifted</div><div class="tile-val">${fmtVolume(stats.volumeKg)}</div></div>
+        <div class="tile"><div class="tile-label">Week streak</div><div class="tile-val">${stats.streak}</div></div>
+      </div>
+      ${stats.bestLifts.length ? `<div class="list">
+        ${stats.bestLifts.map((l) => `<a class="list-row" href="#lift/${esc(l.id)}"><div>${esc(l.name)}</div><div>e1RM ${l.e1rm} kg</div></a>`).join('')}
+      </div>` : ''}
+      <div class="note">${stats.workSets} hard sets since ${esc(longDay(stats.since))}. The streak counts weeks in a row with at least one workout.</div>` : `
+      <div class="note">Finish a workout and your totals, streak and best lifts show up here.</div>`}
+
+      <div class="eyebrow">Training split</div>
+      <div class="stack">
+        ${settings.splits.length ? `<div class="list">
+          ${settings.splits.map((p, i) => `<div class="list-row"><div>${esc(splitLabel(p))}</div><button type="button" class="text-btn" data-split-remove="${i}" aria-label="Remove ${esc(splitLabel(p))}">Remove</button></div>`).join('')}
+        </div>` : ''}
+        <div class="split-add">
+          <select class="text-input" name="split-main" aria-label="Main group">${SPLIT_GROUPS.map((g) => `<option value="${g}">${groupLabel(g)}</option>`).join('')}</select>
+          <span class="muted">+</span>
+          <select class="text-input" name="split-support" aria-label="Supporting group">${SPLIT_GROUPS.map((g) => `<option value="${g}"${g === 'triceps' ? ' selected' : ''}>${groupLabel(g)}</option>`).join('')}</select>
+        </div>
+        <button type="button" class="btn btn-secondary" data-act="split-add">Add pairing</button>
+        <div class="note">The pairings you train, like Chest + Triceps. Today suggests the one whose main group has waited longest.</div>
+      </div>
+
+      <div class="eyebrow">Training</div>
+      <div class="stack">
+        ${choice('Bar weight (kg)', 'barWeightKg', BAR_OPTIONS, settings.barWeightKg)}
+        ${choice('Weight step (kg)', 'stepKg', STEP_OPTIONS, settings.stepKg)}
+        ${choice('Rest timer', 'restSec', REST_OPTIONS, settings.restSec, fmtRest)}
+        <div class="field">
+          <span class="field-label">Plates you have (kg)</span>
+          <div class="lib-groups">
+            ${plateList.map((p) => `<button type="button" class="chip-btn" data-plate="${p}" aria-pressed="${settings.plates.includes(p)}">${fmtNum(p)}</button>`).join('')}
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div>Rest timer sound</div>
+          <button type="button" class="switch" role="switch" aria-checked="${settings.sound}" aria-label="Rest timer sound" data-act="sound"><span></span></button>
+        </div>
+      </div>
+
       <div class="eyebrow">Appearance</div>
-      <div class="segmented" role="group" aria-label="Theme">
+      <div class="segmented" role="group" aria-label="Theme" data-theme-group>
         ${THEMES.map(([id, label]) => `<button type="button" data-theme-pick="${id}" aria-pressed="${id === theme}">${label}</button>`).join('')}
       </div>
 
@@ -60,12 +139,41 @@ export async function render(root) {
       ${versionLine()}
     </div>`;
 
-  const rerender = () => {
+  const rerender = async () => {
     window.dispatchEvent(new Event('gymlog:backup-changed')); // lets the shell update the tab's overdue dot
-    return render(root);
+    const y = window.scrollY;
+    await render(root);
+    window.scrollTo(0, y);
   };
+  const save = async (patch) => { await saveSettings(patch); await rerender(); };
 
-  root.querySelector('.segmented').addEventListener('click', (ev) => {
+  for (const name of ['name', 'goal']) {
+    root.querySelector(`input[name=${name}]`).addEventListener('change', (ev) => saveSettings({ [name]: ev.target.value }));
+  }
+  // On the fresh .screen, not root: root survives a re-render and would collect duplicate listeners.
+  root.querySelector('.screen').addEventListener('click', (ev) => {
+    const pick = ev.target.closest('[data-set]');
+    if (pick) { save({ [pick.dataset.set]: Number(pick.dataset.val) }); return; }
+    const plate = ev.target.closest('[data-plate]');
+    if (plate) { save({ plates: togglePlate(settings.plates, Number(plate.dataset.plate)) }); return; }
+    const gone = ev.target.closest('[data-split-remove]');
+    if (gone) save({ splits: settings.splits.filter((_, i) => i !== Number(gone.dataset.splitRemove)) });
+  });
+  root.querySelector('[data-act=split-add]').addEventListener('click', () => {
+    const main = root.querySelector('select[name=split-main]').value;
+    const support = root.querySelector('select[name=split-support]').value;
+    if (main === support) { toast('Pick two different groups.'); return; }
+    if (settings.splits.some((p) => p.main === main && p.support === support)) { toast('That pairing is already there.'); return; }
+    save({ splits: [...settings.splits, { main, support }] });
+  });
+  root.querySelector('[data-act=sound]').addEventListener('click', () => {
+    const on = !settings.sound;
+    setSoundOn(on);
+    if (on) { unlockAudio(); beep(); } // this tap readies iOS audio, and the beep shows what it sounds like
+    save({ sound: on });
+  });
+
+  root.querySelector('[data-theme-group]').addEventListener('click', (ev) => {
     const btn = ev.target.closest('[data-theme-pick]');
     if (!btn) return;
     globalThis.gymlogTheme?.set(btn.dataset.themePick);
