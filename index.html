@@ -93,9 +93,9 @@ input{font:inherit}
 .btn:disabled{opacity:0.45}
 
 .toggle-row{display:flex;justify-content:space-between;align-items:center;min-height:52px;font-size:16px;font-weight:500}
-.switch{width:56px;height:34px;border:none;border-radius:17px;background:var(--line-strong);padding:3px;display:flex;justify-content:flex-start;align-items:center;flex:none}
+.switch{width:56px;height:44px;border:5px solid transparent;border-left:0;border-right:0;background-clip:padding-box;border-radius:17px;background-color:var(--line-strong);padding:3px;display:flex;justify-content:flex-start;align-items:center;flex:none}
 .switch span{width:28px;height:28px;border-radius:50%;background:var(--text);display:block}
-.switch[aria-checked="true"]{background:var(--accent);justify-content:flex-end}
+.switch[aria-checked="true"]{background-color:var(--accent);justify-content:flex-end}
 .switch[aria-checked="true"] span{background:var(--on-accent)}
 
 .chip-btn{min-width:64px;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line-strong);background:transparent;color:var(--text);font-size:15px;font-weight:600;touch-action:manipulation}
@@ -392,8 +392,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.18";
-var APP_WHATS_NEW = "Works fully offline now, fonts included, and pinch or double-tap no longer zooms the page";
+var APP_VERSION = "0.18.1";
+var APP_WHATS_NEW = "The weekly backup switch is easier to tap";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>
