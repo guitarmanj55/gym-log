@@ -22,11 +22,15 @@ export function imagePaths(entry) {
   return Array.from({ length: entry.images || 0 }, (_, i) => `library/${entry.id}/${i}.jpg`);
 }
 
+// Lifts that also show under a second group (traps are trained with shoulders as often as back).
+const ALSO_IN = { Barbell_Shrug: ['shoulders'], Dumbbell_Shrug: ['shoulders'] };
+
 /** Entries in one group (or all), narrowed by a search over name, muscles and equipment. */
 export function filterLibrary(library, { group = '', query = '' } = {}) {
-  const words = String(query).toLowerCase().split(/\s+/).filter(Boolean);
+  // "shrugs" finds "Shrug": drop a trailing s from each search word
+  const words = String(query).toLowerCase().split(/\s+/).filter(Boolean).map((w) => (w.length > 3 ? w.replace(/s$/, '') : w));
   return library.filter((e) => {
-    if (group && e.group !== group) return false;
+    if (group && e.group !== group && !ALSO_IN[e.id]?.includes(group)) return false;
     if (!words.length) return true;
     const hay = [e.name, equipmentLabel(e.equipment), ...e.primary, ...e.secondary].join(' ').toLowerCase();
     return words.every((w) => hay.includes(w));

@@ -4,7 +4,7 @@
 import { LIBRARY } from '../lib/library-data.js';
 import { LIBRARY_GROUPS, filterLibrary, detailsFor, imagePaths, subtitle, groupLabel } from '../lib/library.js';
 import { equipmentLabel } from '../lib/exercise.js';
-import { findOrCreateExercise, listExercises, listWorkouts, saveWorkout } from '../db/workout.js';
+import { findOrCreateExercise, listExercises, listWorkouts, saveWorkout, addExerciseToSession, getActiveSession } from '../db/workout.js';
 import { readDraft, writeDraft } from '../lib/wo-draft.js';
 import { esc, toast } from '../ui.js';
 
@@ -31,16 +31,21 @@ export async function render(root) {
 async function addToDraft(entry) {
   const draft = readDraft();
   if (!draft) return false;
-  const ex = await findOrCreateExercise(detailsFor(entry));
+  const ex = draft.id === 'session' // a workout in progress: add to today's session (and its saved workout)
+    ? (await addExerciseToSession(await currentSessionId(), detailsFor(entry)), await findOrCreateExercise(detailsFor(entry)))
+    : await findOrCreateExercise(detailsFor(entry));
   if (!draft.ids.includes(ex.id)) draft.ids.push(ex.id);
   writeDraft(draft);
   toast(`${entry.name} added to ${draft.name || 'your workout'}.`);
   return true;
 }
 
+const currentSessionId = async () => (await getActiveSession())?.id;
+const draftHref = (draft) => (draft.id === 'new' ? '#workout/new' : draft.id === 'session' ? '#active' : `#workout/${draft.id}`);
+
 function backBanner(draft) {
   if (!draft) return '';
-  const href = draft.id === 'new' ? '#workout/new' : `#workout/${draft.id}`;
+  const href = draftHref(draft);
   return `
     <div class="lib-banner">
       <span>Adding to <b>${esc(draft.name || (draft.id === 'new' ? 'new workout' : 'workout'))}</b> · ${draft.ids.length} so far</span>
@@ -155,7 +160,7 @@ async function renderDetail(root, e) {
   const act = root.querySelector('#lib-act');
   function drawAct() {
     if (draft) {
-      const href = draft.id === 'new' ? '#workout/new' : `#workout/${draft.id}`;
+      const href = draftHref(draft);
       act.innerHTML = added
         ? `<a class="btn btn-primary" href="${href}">Added · back to workout</a>`
         : `<button type="button" class="btn btn-primary" data-act="add">Add to ${esc(draft.name || 'workout')}</button>`;

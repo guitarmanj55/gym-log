@@ -26,6 +26,12 @@ test('filter by group and by search words', () => {
   assert.equal(filterLibrary(LIBRARY, { query: 'zzzz' }).length, 0);
 });
 
+test('shrugs are found by plural search and listed under shoulders too', () => {
+  assert.ok(filterLibrary(LIBRARY, { query: 'shrugs' }).length >= 2);
+  const shoulders = filterLibrary(LIBRARY, { group: 'shoulders' });
+  assert.ok(shoulders.some((e) => /shrug/i.test(e.name)));
+});
+
 test('detailsFor maps to a saved exercise (biceps and triceps are stored as arms)', () => {
   const curl = LIBRARY.find((e) => e.group === 'biceps');
   const d = cleanDetails(detailsFor(curl));

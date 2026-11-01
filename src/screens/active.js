@@ -18,6 +18,7 @@ import { detailFields, formAttrs, readDetails } from './exercise-form.js';
 import { keepAwake, unlockAudio, beep, fanfare, setSoundOn } from '../device.js';
 import { esc, toast, flash, fmtKg } from '../ui.js';
 import { autoBackup } from '../cloud.js';
+import { writeDraft } from '../lib/wo-draft.js';
 
 // Per-workout screen state that should survive a reload: current exercise, edited plans, rest timer.
 const STATE_KEY = 'gymlog_workout';
@@ -327,6 +328,7 @@ export async function render(root) {
         ${saved.length ? `
           <div class="eyebrow">Add one of yours</div>
           <div class="pick-list">${saved.map((e) => `<button type="button" class="chip-btn" data-act="add-saved" data-id="${e.id}">+ ${esc(e.name)}</button>`).join('')}</div>` : ''}
+        <button type="button" class="btn btn-secondary" data-act="browse-library">Browse exercise library</button>
         <form ${formAttrs()} data-form="add">
           <div class="eyebrow">New exercise</div>
           ${detailFields({}, { names: exercises.map((e) => e.name) })}
@@ -443,6 +445,10 @@ export async function render(root) {
   const actions = {
     'open-sheet': () => { sheetOpen = true; draw(); },
     'close-sheet': () => { sheetOpen = false; editingExercise = false; draw(); },
+    'browse-library': () => {
+      writeDraft({ id: 'session', name: session.name || 'this workout', ids: detail.items.map((it) => it.exerciseId) });
+      location.hash = '#library';
+    },
     'edit-ex': () => { editingExercise = true; draw(); },
     jump: async (el) => { st.current = el.dataset.se; sheetOpen = false; await refresh(); },
     next: async () => {
