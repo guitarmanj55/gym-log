@@ -90,6 +90,40 @@ test('schema 2 backups get muscle groups and an empty workout list', () => {
   assert.deepEqual(out.workouts, []);
 });
 
+test('schema 3 backups get empty food and health lists', () => {
+  const out = migrateBackup({ ...valid(), schema: 3 });
+  assert.equal(out.schema, BACKUP_SCHEMA);
+  assert.deepEqual([out.meals, out.foodLog, out.health], [[], [], []]);
+  assert.equal(out.settings.calorieTarget, null);
+});
+
+test('food and health records survive and are checked', () => {
+  const file = {
+    ...valid(), schema: BACKUP_SCHEMA,
+    meals: [{ id: 'm1', name: 'Burger and chips', kcal: 950, createdAt: 1 }],
+    foodLog: [{ id: 'f1', at: 5, day: '2026-11-01', mealId: 'm1', name: 'Burger and chips', kcal: 950, portion: 1 }],
+    health: [{ id: '2026-11-01', weightKg: 84.2, src: { weightKg: 'manual' } }],
+  };
+  const out = migrateBackup(file);
+  assert.equal(out.meals.length + out.foodLog.length + out.health.length, 3);
+  assert.throws(() => migrateBackup({ ...file, meals: [{ id: 'm1', name: '', kcal: 1 }] }), /meal has no name/);
+  assert.throws(() => migrateBackup({ ...file, foodLog: [{ ...file.foodLog[0], day: 'today' }] }), /no date/);
+  assert.throws(() => migrateBackup({ ...file, foodLog: [{ ...file.foodLog[0], portion: 0 }] }), /invalid portion/);
+  assert.throws(() => migrateBackup({ ...file, health: [{ id: '2026-11-01', steps: -1 }] }), /invalid steps/);
+});
+
+test('a health day may hold any subset of metrics', () => {
+  const file = { ...valid(), schema: BACKUP_SCHEMA, health: [{ id: '2026-11-01' }, { id: '2026-11-02', sleepMin: 420 }] };
+  assert.equal(migrateBackup(file).health.length, 2);
+});
+
+test('calorie and protein targets are clamped to sensible values or cleared', () => {
+  assert.equal(normaliseSettings({ calorieTarget: 2300.4 }).calorieTarget, 2300);
+  assert.equal(normaliseSettings({ calorieTarget: 5 }).calorieTarget, null);
+  assert.equal(normaliseSettings({ proteinTarget: 160 }).proteinTarget, 160);
+  assert.equal(normaliseSettings({ proteinTarget: 'lots' }).proteinTarget, null);
+});
+
 test('saved workouts are checked', () => {
   const file = { ...valid(), schema: BACKUP_SCHEMA, workouts: [{ id: 'w1', name: 'Legs', exerciseIds: ['e1'], createdAt: 1 }] };
   assert.equal(migrateBackup(file).workouts.length, 1);

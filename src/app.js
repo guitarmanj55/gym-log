@@ -11,9 +11,11 @@ import * as active from './screens/active.js';
 import * as summary from './screens/summary.js';
 import * as workout from './screens/workout.js';
 import * as library from './screens/library.js';
+import * as food from './screens/food.js';
 import { clearDraft } from './lib/wo-draft.js';
 
-const SCREENS = { today, history, lift, profile, active, summary, workout, library };
+const SCREENS = { today, food, history, lift, profile, active, summary, workout, library };
+const TAB_OF = { workout: 'today', library: 'lift' }; // screens opened from another tab keep that tab lit
 const NO_TABS = new Set(['active']); // full-screen, like the design
 const DEFAULT_SCREEN = 'today';
 const VERSION_KEY = 'gymlog_version';
@@ -24,7 +26,7 @@ let renderId = 0;
 async function route() {
   const name = location.hash.slice(1).split('/')[0];
   const key = SCREENS[name] ? name : DEFAULT_SCREEN;
-  const tab = key === 'workout' ? 'today' : key; // the workout editor is opened from Today
+  const tab = TAB_OF[key] || key;
   for (const a of document.querySelectorAll('#tabs a')) {
     if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');

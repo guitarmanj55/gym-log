@@ -399,6 +399,25 @@ a.btn{text-decoration:none}
 .sheet-name{display:flex;flex-direction:column;gap:2px}
 .sheet-name small{font-size:13px;font-weight:500;color:var(--muted)}
 
+/* ============ FOOD ============ */
+.day-nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.day-nav .chip-btn{min-width:56px;font-size:22px}
+.day-nav .chip-btn:disabled{opacity:.35}
+.day-label{font-family:var(--font-num);font-size:26px;font-weight:700}
+.food-total{display:flex;align-items:baseline;gap:6px}
+.big-kcal{font-family:var(--font-num);font-size:44px;font-weight:700;line-height:1}
+.food-list{padding:0 8px 0 16px}
+.food-row{display:flex;align-items:center;gap:8px;min-height:56px;border-bottom:1px solid var(--line)}
+.food-row:last-child{border-bottom:none}
+.food-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.food-name{font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.food-kcal{font-family:var(--font-num);font-size:22px;font-weight:700}
+.food-save{align-self:flex-start;min-height:32px;padding:0;font-size:13px;color:var(--accent)}
+.food-meal{flex:1;min-width:0;min-height:56px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;background:none;border:none;padding:0;text-align:left;color:var(--text)}
+.food-meal .muted{font-size:13px}
+.food-quick{display:grid;grid-template-columns:1fr 96px;gap:8px}
+.food-row > .text-btn{min-width:48px;min-height:48px;font-size:18px}
+
 /* ============ TAB BAR ============ */
 /* Fixed to the bottom edge rather than placed by the page height, which iOS home-screen apps report unreliably. */
 #tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;padding:6px 12px var(--tabs-bottom);border-top:1px solid var(--line);background:var(--bg)}
@@ -438,6 +457,10 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
     <span>Today</span>
   </a>
+  <a href="#food" data-tab="food">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 12v9"/><path d="M17 3c-2 1.5-3 4-3 7h3v11"/></svg>
+    <span>Food</span>
+  </a>
   <a href="#history" data-tab="history">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     <span>History</span>
@@ -445,10 +468,6 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
   <a href="#lift" data-tab="lift">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>
     <span>Lifts</span>
-  </a>
-  <a href="#library" data-tab="library">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5v14M8 5v14"/><rect x="12" y="5" width="4" height="14" rx="1"/><path d="M19 7.5l2 .5-3 11-2-.5"/></svg>
-    <span>Library</span>
   </a>
   <a href="#profile" data-tab="profile">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>
@@ -461,8 +480,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.22";
-var APP_WHATS_NEW = "Add exercises from the library during a workout; shrugs show under Shoulders and match a plural search";
+var APP_VERSION = "0.23";
+var APP_WHATS_NEW = "New Food tab: save the meals you eat out and log them in one tap; calorie and protein targets in Profile. The exercise library now opens from Lifts";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

@@ -4,6 +4,7 @@ import { exportBackup, importBackup, getSettings, saveSettings, count } from '..
 import { loadAll } from '../db/workout.js';
 import { backupFileName, SPLIT_GROUPS } from '../db/schema.js';
 import { backupStatus } from '../lib/backup.js';
+import { parseAmount } from '../lib/history.js';
 import { groupLabel } from '../lib/library.js';
 import {
   BAR_OPTIONS, STEP_OPTIONS, REST_OPTIONS, PLATE_CHOICES, withCurrent, togglePlate, fmtRest, fmtVolume,
@@ -98,6 +99,19 @@ export async function render(root) {
         </div>
       </div>
 
+      <div class="eyebrow">Food</div>
+      <div class="stack">
+        <label class="field">
+          <span class="field-label">Daily calories <span class="muted">optional</span></span>
+          <input class="text-input" name="calorieTarget" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="e.g. 2300" value="${settings.calorieTarget ?? ''}">
+        </label>
+        <label class="field">
+          <span class="field-label">Daily protein, grams <span class="muted">optional</span></span>
+          <input class="text-input" name="proteinTarget" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="e.g. 160" value="${settings.proteinTarget ?? ''}">
+        </label>
+        <div class="note">Leave a target empty to log without one. The Food tab shows what's left against it.</div>
+      </div>
+
       <div class="eyebrow">Appearance</div>
       <div class="segmented" role="group" aria-label="Theme" data-theme-group>
         ${THEMES.map(([id, label]) => `<button type="button" data-theme-pick="${id}" aria-pressed="${id === theme}">${label}</button>`).join('')}
@@ -149,6 +163,12 @@ export async function render(root) {
 
   for (const name of ['name', 'goal']) {
     root.querySelector(`input[name=${name}]`).addEventListener('change', (ev) => saveSettings({ [name]: ev.target.value }));
+  }
+  for (const name of ['calorieTarget', 'proteinTarget']) {
+    root.querySelector(`input[name=${name}]`).addEventListener('change', async (ev) => {
+      await saveSettings({ [name]: parseAmount(ev.target.value) });
+      ev.target.value = (await getSettings())[name] ?? ''; // shows what was kept (out-of-range values clear)
+    });
   }
   // On the fresh .screen, not root: root survives a re-render and would collect duplicate listeners.
   root.querySelector('.screen').addEventListener('click', (ev) => {

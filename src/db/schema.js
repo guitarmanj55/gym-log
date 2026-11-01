@@ -3,8 +3,8 @@
 import { migrateExerciseV2, migrateExerciseV3 } from '../lib/exercise.js';
 
 export const DB_NAME = 'gymlog';
-export const DB_VERSION = 3;
-export const BACKUP_SCHEMA = 3;
+export const DB_VERSION = 4;
+export const BACKUP_SCHEMA = 4;
 
 export const SET_TYPES = ['warmup', 'top', 'backoff'];
 // Equipment, muscles and the other exercise detail lists live in src/lib/exercise.js.
@@ -57,6 +57,36 @@ export const SET_TYPES = ['warmup', 'top', 'backoff'];
  * @property {number=} rir               reps in reserve, optional
  * @property {number} completedAt
  *
+ * @typedef {Object} Meal             a saved thing Oli eats, e.g. "Burger and chips, hotel bar" (schema 4)
+ * @property {string} id
+ * @property {string} name
+ * @property {number} kcal            starting estimate; once logged, the average of the logged entries is used
+ * @property {number=} low            optional range around the estimate
+ * @property {number=} high
+ * @property {number=} protein        grams, optional
+ * @property {boolean=} archived      hidden from the one-tap list, entries kept
+ * @property {number} createdAt
+ *
+ * @typedef {Object} FoodEntry        one thing eaten (schema 4)
+ * @property {string} id
+ * @property {number} at              epoch ms
+ * @property {string} day             'YYYY-MM-DD' local day it counts for (may differ from `at` when backfilled)
+ * @property {string|null} mealId     the saved Meal, or null for a quick entry
+ * @property {string} name            the meal's name when logged
+ * @property {number} kcal            as eaten, i.e. already scaled by `portion`
+ * @property {number} portion         0.75, 1 or 1.25
+ * @property {number=} protein        grams as eaten
+ * @property {string=} note
+ *
+ * @typedef {Object} HealthDay        one day of Apple Health numbers, every metric optional (schema 4)
+ * @property {string} id              'YYYY-MM-DD'
+ * @property {number=} weightKg
+ * @property {number=} steps
+ * @property {number=} sleepMin
+ * @property {number=} activeKcal
+ * @property {number=} restingHr
+ * @property {Object=} src            metric -> 'manual' | 'import'
+ *
  * @typedef {Object} Settings            single row, id 'settings'
  * @property {'settings'} id
  * @property {number} barWeightKg
@@ -87,6 +117,8 @@ export const DEFAULT_SETTINGS = {
   name: '',
   goal: '',
   splits: [], // [{ main, support }] training pairings, group ids from SPLIT_GROUPS
+  calorieTarget: null, // daily kcal, null = no target
+  proteinTarget: null, // daily grams, null = no target
 };
 
 export const SPLIT_GROUPS = ['chest', 'biceps', 'triceps', 'shoulders', 'back', 'legs'];
@@ -110,7 +142,12 @@ export const STORES = {
   },
   settings: { keyPath: 'id', indexes: [] },
   workouts: { keyPath: 'id', indexes: [] },
+  meals: { keyPath: 'id', indexes: [] },
+  foodLog: { keyPath: 'id', indexes: [['day', 'day'], ['mealId', 'mealId']] },
+  health: { keyPath: 'id', indexes: [] },
 };
+
+const FOOD_STORES = ['meals', 'foodLog', 'health']; // added in DB_VERSION 4
 
 /**
  * Called from indexedDB.open(...).onupgradeneeded with the upgrade transaction.
@@ -140,12 +177,19 @@ export function createStores(db, oldVersion, tx) {
     // Saved workouts (step 1 creates every store, so only older databases need this).
     db.createObjectStore('workouts', { keyPath: STORES.workouts.keyPath });
   }
-  // if (oldVersion < 4) { ...migration for DB_VERSION 4... }
+  if (oldVersion >= 1 && oldVersion < 4) {
+    // Food and health stores (step 1 creates every store, so only older databases need this).
+    for (const name of FOOD_STORES) {
+      const def = STORES[name];
+      const store = db.createObjectStore(name, { keyPath: def.keyPath });
+      for (const [indexName, keyPath, options] of def.indexes) store.createIndex(indexName, keyPath, options);
+    }
+  }
 }
 
 // ---------- Backups ----------
 
-export const DATA_STORES = ['exercises', 'workouts', 'sessions', 'sessionExercises', 'sets'];
+export const DATA_STORES = ['exercises', 'workouts', 'sessions', 'sessionExercises', 'sets', ...FOOD_STORES];
 
 /** Settings from storage or a backup, with any missing fields filled from DEFAULT_SETTINGS. */
 export function normaliseSettings(s) {
@@ -157,6 +201,8 @@ export function normaliseSettings(s) {
   out.sound = out.sound !== false;
   out.name = typeof out.name === 'string' ? out.name.trim().slice(0, 30) : '';
   out.goal = typeof out.goal === 'string' ? out.goal.trim().slice(0, 80) : '';
+  out.calorieTarget = Number.isFinite(out.calorieTarget) && out.calorieTarget >= 500 && out.calorieTarget <= 10000 ? Math.round(out.calorieTarget) : null;
+  out.proteinTarget = Number.isFinite(out.proteinTarget) && out.proteinTarget >= 10 && out.proteinTarget <= 500 ? Math.round(out.proteinTarget) : null;
   out.splits = (Array.isArray(out.splits) ? out.splits : [])
     .filter((p) => p && SPLIT_GROUPS.includes(p.main) && SPLIT_GROUPS.includes(p.support) && p.main !== p.support)
     .map((p) => ({ main: p.main, support: p.support }));
@@ -178,7 +224,7 @@ export function migrateBackup(file) {
   for (const name of DATA_STORES) data[name] = Array.isArray(file[name]) ? file[name].map((r) => ({ ...r })) : [];
   if (data.schema < 2) { data.exercises = data.exercises.map(migrateExerciseV2); data.schema = 2; }
   if (data.schema < 3) { data.exercises = data.exercises.map(migrateExerciseV3); data.schema = 3; }
-  // if (data.schema < 4) { ...rewrite records for schema 4...; data.schema = 4; }
+  if (data.schema < 4) { data.schema = 4; } // food and health stores are new and start empty
 
   data.schema = BACKUP_SCHEMA;
   data.settings = normaliseSettings(data.settings);
@@ -214,6 +260,22 @@ export function validateBackup(data) {
   }
   for (const se of data.sessionExercises) {
     if (!isId(se.sessionId) || !isId(se.exerciseId)) fail('a session exercise is missing its links.');
+  }
+  const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  for (const m of data.meals) {
+    if (typeof m.name !== 'string' || !m.name.trim()) fail('a meal has no name.');
+    if (!isNum(m.kcal) || m.kcal < 0) fail(`meal ${m.name} has an invalid calorie count.`);
+  }
+  for (const f of data.foodLog) {
+    if (!isDay(f.day) || !isNum(f.at)) fail('a food entry has no date.');
+    if (!isNum(f.kcal) || f.kcal < 0) fail('a food entry has an invalid calorie count.');
+    if (!isNum(f.portion) || f.portion <= 0) fail('a food entry has an invalid portion.');
+  }
+  for (const h of data.health) {
+    if (!isDay(h.id)) fail('a health record has no date.');
+    for (const k of ['weightKg', 'steps', 'sleepMin', 'activeKcal', 'restingHr']) {
+      if (h[k] !== undefined && (!isNum(h[k]) || h[k] < 0)) fail(`a health record has an invalid ${k}.`);
+    }
   }
   for (const s of data.sets) {
     if (!SET_TYPES.includes(s.type)) fail(`a set has an unknown type "${s.type}".`);

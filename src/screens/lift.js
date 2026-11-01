@@ -37,6 +37,7 @@ export async function render(root) {
       <div class="screen">
         <h1 class="title">Lifts</h1>
         <div class="lead">Log a workout and each lift gets its e1RM trend here.</div>
+        <a class="btn btn-secondary" href="#library">Browse the exercise library</a>
       </div>`;
     return;
   }
@@ -75,7 +76,8 @@ export async function render(root) {
     <div class="segmented" role="group" aria-label="View">
       <button type="button" data-act="view" data-view="one" aria-pressed="${view === 'one'}">One lift</button>
       <button type="button" data-act="view" data-view="all" aria-pressed="${view === 'all'}">All lifts</button>
-    </div>`;
+    </div>
+    <a class="text-btn" href="#library">Browse the exercise library</a>`;
 
   function drawAll() {
     root.innerHTML = `

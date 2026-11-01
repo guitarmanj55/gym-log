@@ -119,6 +119,9 @@ export async function exportBackup() {
     sessions: data.sessions,
     sessionExercises: data.sessionExercises,
     sets: data.sets,
+    meals: data.meals,
+    foodLog: data.foodLog,
+    health: data.health,
     settings: normaliseSettings(data.settings[0]),
   };
 }
