@@ -7,7 +7,7 @@ import { backupFingerprint } from './lib/backup.js';
 // The local server talks to `wrangler dev` in worker/, so testing never touches real backups.
 export const CLOUD_URL = ['localhost', '127.0.0.1'].includes(location.hostname)
   ? 'http://localhost:8787'
-  : 'https://gym-log-backup.t212-pocket.workers.dev';
+  : 'https://gym-log-backup.pocket-apps.workers.dev';
 const STORE_KEY = 'gymlog_cloud'; // localStorage: { key, lastAt, lastHash, error }
 
 export function getCloud() {
