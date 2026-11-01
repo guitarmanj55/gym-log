@@ -39,6 +39,35 @@ export function weightChange(days, today, span = 7) {
   return now && before ? Math.round((now.kg - before.kg) * 10) / 10 : null;
 }
 
+/**
+ * Folds one day's numbers from Apple Health sync into what is stored. Imported values replace older
+ * imported ones (a day's steps keep growing), but a number typed by hand is never overwritten.
+ * Returns the record to save, or null when nothing would change.
+ */
+export function mergeImported(existing, day, incoming) {
+  const rec = { ...(existing || {}), id: day, src: { ...(existing?.src || {}) } };
+  let changed = false;
+  for (const k of METRICS) {
+    const v = incoming?.[k];
+    if (!Number.isFinite(v) || rec.src[k] === 'manual') continue;
+    if (rec[k] !== v || rec.src[k] !== 'import') { rec[k] = v; rec.src[k] = 'import'; changed = true; }
+  }
+  return changed ? rec : null;
+}
+
+/** Newest value of a metric within the last `within` days up to `today`: {day, value}, or null (no data is fine). */
+export function latestMetric(days, key, today, within = 14) {
+  const oldest = dateInputValue(shiftDays(new Date(`${today}T12:00:00`).getTime(), -(within - 1)));
+  const d = days.filter((x) => has(x, key) && x.id >= oldest && x.id <= today).sort((a, b) => b.id.localeCompare(a.id))[0];
+  return d ? { day: d.id, value: d[key] } : null;
+}
+
+/** 437 minutes -> "7h 17m". */
+export function fmtSleep(min) {
+  const m = Math.round(min);
+  return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+}
+
 /** The record to store when weight is typed by hand: keeps the day's other metrics, marks weight as manual. */
 export function withManualWeight(existing, day, kg) {
   return { ...(existing || {}), id: day, weightKg: kg, src: { ...(existing?.src || {}), weightKg: 'manual' } };

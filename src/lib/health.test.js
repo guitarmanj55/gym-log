@@ -1,6 +1,41 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { latestWeight, weightRows, recentWeight, weightChange, withManualWeight, withoutWeight } from './health.js';
+import {
+  latestWeight, weightRows, recentWeight, weightChange, withManualWeight, withoutWeight, mergeImported, latestMetric, fmtSleep,
+} from './health.js';
+
+test('mergeImported: new day, newer import replaces older import, same data changes nothing', () => {
+  const first = mergeImported(undefined, '2026-11-01', { steps: 3000, weightKg: 84 });
+  assert.deepEqual(first, { id: '2026-11-01', steps: 3000, weightKg: 84, src: { steps: 'import', weightKg: 'import' } });
+  const later = mergeImported(first, '2026-11-01', { steps: 9000 });
+  assert.equal(later.steps, 9000);
+  assert.equal(later.weightKg, 84);
+  assert.equal(mergeImported(later, '2026-11-01', { steps: 9000 }), null);
+  assert.equal(mergeImported(undefined, '2026-11-01', {}), null);
+});
+
+test('mergeImported never overwrites a number typed by hand, but fills the other metrics', () => {
+  const mine = withManualWeight(undefined, '2026-11-01', 84.2);
+  const out = mergeImported(mine, '2026-11-01', { weightKg: 90, steps: 100 });
+  assert.equal(out.weightKg, 84.2);
+  assert.equal(out.src.weightKg, 'manual');
+  assert.equal(out.steps, 100);
+  assert.equal(mergeImported(mine, '2026-11-01', { weightKg: 90 }), null);
+});
+
+test('latestMetric: newest value in the window, null when there is no data', () => {
+  const days = [day('2026-10-31', { steps: 5000 }), day('2026-10-20', { steps: 1 }), day('2026-11-01', { sleepMin: 400 })];
+  assert.deepEqual(latestMetric(days, 'steps', '2026-11-01', 14), { day: '2026-10-31', value: 5000 });
+  assert.deepEqual(latestMetric(days, 'sleepMin', '2026-11-01'), { day: '2026-11-01', value: 400 });
+  assert.equal(latestMetric(days, 'restingHr', '2026-11-01'), null);
+  assert.equal(latestMetric([day('2026-09-01', { steps: 5 })], 'steps', '2026-11-01'), null); // too old
+  assert.equal(latestMetric([], 'steps', '2026-11-01'), null);
+});
+
+test('fmtSleep', () => {
+  assert.equal(fmtSleep(437), '7h 17m');
+  assert.equal(fmtSleep(420), '7h 00m');
+});
 
 const day = (id, o = {}) => ({ id, ...o });
 

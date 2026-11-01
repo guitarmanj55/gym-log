@@ -1,7 +1,7 @@
 // App shell: hash router, service worker, persistent storage, automatic backup and the update toast.
 import { openDB, getSettings, count } from './db/db.js';
 import { backupStatus } from './lib/backup.js';
-import { getCloud, autoBackup } from './cloud.js';
+import { getCloud, autoBackup, autoPullHealth } from './cloud.js';
 import { toast } from './ui.js';
 import * as today from './screens/today.js';
 import * as history from './screens/history.js';
@@ -92,8 +92,11 @@ route();
 askPersist();
 announceUpdate();
 autoBackup();
+autoPullHealth();
 // Back up whatever changed when leaving the app and catch up on return (iOS may suspend an upload mid-way).
 document.addEventListener('visibilitychange', autoBackup);
+// Coming back to the app is when new Health numbers are worth fetching.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoPullHealth(); });
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   // When a new release's worker takes over, reload once so its files are used straight away.

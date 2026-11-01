@@ -400,6 +400,10 @@ a.btn{text-decoration:none}
 .sheet-name small{font-size:13px;font-weight:500;color:var(--muted)}
 
 a.text-btn{display:inline-flex;align-items:center;min-width:48px}
+.tiles-wrap{flex-wrap:wrap}
+.tiles-wrap .tile{flex:1 1 calc(50% - 5px)}
+.tile-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+pre.debug{white-space:pre-wrap;word-break:break-all;font-family:monospace}
 
 /* ============ HOME ============ */
 .home-card{display:flex;flex-direction:column;gap:4px;min-height:112px;justify-content:center;padding:18px 20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;color:var(--text)}
@@ -489,8 +493,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.24";
-var APP_WHATS_NEW = "New Home page with Gym, Food and Health. Food: save the meals you eat out and log them in one tap. Health: log your weight. The gym tabs are unchanged";
+var APP_VERSION = "0.25";
+var APP_WHATS_NEW = "Health can now pull steps, sleep, active energy and resting heart rate from Apple Health (needs the one-time sync setup). Days without data stay blank";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

@@ -2,18 +2,26 @@
 // PUT /backups      store a backup (JSON body), returns { id, at }
 // GET /backups      list every stored backup, newest first, with sessions/sets/bytes
 // GET /backups/:id  one backup's JSON
-// Every request needs "Authorization: Bearer <BACKUP_KEY>" (a Worker secret).
+// POST /health      store Apple Health numbers a phone pushes (iOS Shortcut or Health Auto Export)
+// GET /health       days from ?from=YYYY-MM-DD (default 60 days back) to ?to=, newest last
+// Every request needs "Authorization: Bearer <BACKUP_KEY>" (a Worker secret), except POST /health,
+// which takes "Bearer <HEALTH_KEY>" instead: a separate secret, so the key sitting in a phone automation
+// can add health numbers but can never read or list backups.
+
+import { parseHealth, mergeDay, dayOf } from './health-parse.js';
 
 const ORIGINS = ['https://guitarmanj55.github.io', 'http://localhost:8123', 'http://127.0.0.1:8123'];
 const MAX_BYTES = 20 * 1024 * 1024; // KV allows 25 MB per value
+const MAX_HEALTH_BYTES = 2 * 1024 * 1024;
 const PREFIX = 'b:';
+const HEALTH = 'h:'; // "h:<YYYY-MM-DD>": one day, the record is also the key's metadata so a list returns it all
 
 export default {
   async fetch(req, env) {
     const origin = req.headers.get('Origin');
     const cors = {
       'Access-Control-Allow-Origin': ORIGINS.includes(origin) ? origin : ORIGINS[0],
-      'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
       'Access-Control-Max-Age': '86400',
       Vary: 'Origin',
@@ -23,11 +31,45 @@ export default {
     });
 
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-    if (!env.BACKUP_KEY || !(await sameKey(req.headers.get('Authorization'), `Bearer ${env.BACKUP_KEY}`))) {
+    const url = new URL(req.url);
+    const path = url.pathname.replace(/\/+$/, '');
+    const auth = req.headers.get('Authorization');
+
+    if (path === '/health' && req.method === 'POST') {
+      if (!env.HEALTH_KEY || !(await sameKey(auth, `Bearer ${env.HEALTH_KEY}`))) return json({ error: 'Wrong health key.' }, 401);
+      const text = await req.text();
+      if (text.length > MAX_HEALTH_BYTES) return json({ error: 'Too large.' }, 413);
+      let body;
+      try { body = JSON.parse(text); } catch { return json({ error: 'Not JSON.' }, 400); }
+      const { days, skipped } = parseHealth(body, Date.now());
+      const at = Date.now();
+      for (const [day, fields] of Object.entries(days)) {
+        const stored = await env.BACKUPS.get(HEALTH + day, 'json');
+        const record = mergeDay(stored, fields, at);
+        await env.BACKUPS.put(HEALTH + day, JSON.stringify(record), { metadata: record });
+      }
+      return json({ days: Object.keys(days).sort(), skipped });
+    }
+
+    if (!env.BACKUP_KEY || !(await sameKey(auth, `Bearer ${env.BACKUP_KEY}`))) {
       return json({ error: 'Wrong backup key.' }, 401);
     }
 
-    const path = new URL(req.url).pathname.replace(/\/+$/, '');
+    if (path === '/health' && req.method === 'GET') {
+      const to = dayOf(url.searchParams.get('to')) || '9999-12-31';
+      const from = dayOf(url.searchParams.get('from')) || new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+      const out = [];
+      let cursor;
+      do {
+        const page = await env.BACKUPS.list({ prefix: HEALTH, cursor });
+        for (const k of page.keys) {
+          const day = k.name.slice(HEALTH.length);
+          if (day >= from && day <= to && k.metadata) out.push({ day, ...k.metadata });
+        }
+        cursor = page.list_complete ? undefined : page.cursor;
+      } while (cursor);
+      return json({ days: out.sort((a, b) => a.day.localeCompare(b.day)) });
+    }
 
     if (path === '/backups' && req.method === 'PUT') {
       const text = await req.text();

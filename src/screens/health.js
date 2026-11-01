@@ -1,11 +1,22 @@
 // Health: weight typed by hand for now. Steps, sleep, active energy and resting heart rate arrive with
 // Apple Health sync; until then (and any time there's no watch data) they simply don't show.
 import { getAll, get, put, remove } from '../db/db.js';
-import { dateInputValue, parseAmount, shortDate } from '../lib/history.js';
-import { latestWeight, weightRows, recentWeight, weightChange, withManualWeight, withoutWeight } from '../lib/health.js';
+import { dateInputValue, parseAmount, shortDate, relativeDay } from '../lib/history.js';
+import {
+  latestWeight, weightRows, recentWeight, weightChange, withManualWeight, withoutWeight, latestMetric, fmtSleep,
+} from '../lib/health.js';
+import { getCloud, pullHealth } from '../cloud.js';
 import { esc, toast } from '../ui.js';
 
 const noon = (day) => new Date(`${day}T12:00:00`).getTime();
+
+// The Apple Health numbers, each shown only when there is a reading in the last two weeks.
+const METRIC_TILES = [
+  ['steps', 'Steps', (v) => Math.round(v).toLocaleString('en-GB')],
+  ['sleepMin', 'Sleep', fmtSleep],
+  ['activeKcal', 'Active energy', (v) => `${Math.round(v).toLocaleString('en-GB')} kcal`],
+  ['restingHr', 'Resting heart rate', (v) => `${Math.round(v)} bpm`],
+];
 
 export async function render(root) {
   const today = () => dateInputValue(Date.now());
@@ -20,6 +31,17 @@ export async function render(root) {
     const change = weightChange(days, now, 7);
     const last = latestWeight(days);
     const rows = weightRows(days, 14);
+    const tiles = METRIC_TILES.map(([key, label, fmt]) => {
+      const m = latestMetric(days, key, now, 14);
+      return m ? `<div class="tile"><div class="tile-label">${label} · ${esc(relativeDay(noon(m.day), Date.now()))}</div><div class="tile-val">${esc(fmt(m.value))}</div></div>` : '';
+    }).filter(Boolean);
+    const cloud = getCloud();
+    const debug = new URLSearchParams(location.search).has('debug');
+    const syncLine = !cloud.key
+      ? 'Apple Health sync uses the backup key. Turn on automatic backup in Profile, then set up the sync.'
+      : cloud.healthError ? `Sync problem: ${cloud.healthError}`
+      : cloud.healthAt ? `Last checked for Apple Health numbers ${new Date(cloud.healthAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`
+      : 'Not checked yet.';
     const changeText = change === null ? '' : change === 0 ? 'No change from the week before' : `${change > 0 ? '+' : '−'}${Math.abs(change)} kg on the week before`;
 
     root.innerHTML = `
@@ -41,6 +63,7 @@ export async function render(root) {
           </div>
           <button type="button" class="btn btn-primary" data-act="save">Save weight</button>
         </div>
+        ${tiles.length ? `<div class="tiles tiles-wrap">${tiles.join('')}</div>` : ''}
         ${rows.length ? `
         <div class="stack">
           <div class="eyebrow">Recent weigh-ins</div>
@@ -53,7 +76,9 @@ export async function render(root) {
               </div>`).join('')}
           </div>
         </div>` : ''}
-        <div class="note">Steps, sleep, active energy and resting heart rate will show here once Apple Health sync is set up. Days without data stay blank, so the app works fine without a watch.</div>
+        <div class="note">${tiles.length ? 'Showing the latest reading of each in the last two weeks. ' : 'Steps, sleep, active energy and resting heart rate show here once Apple Health sync is set up. '}Days without data stay blank, so the app works fine without a watch.</div>
+        <div class="note">${esc(syncLine)}</div>
+        ${debug ? `<pre class="note debug">${esc(JSON.stringify({ ...cloud, key: cloud.key ? 'set' : null, imported: days.filter((d) => Object.values(d.src || {}).includes('import')).length, days: days.length }, null, 1))}</pre>` : ''}
       </div>`;
   }
 
@@ -85,4 +110,11 @@ export async function render(root) {
 
   await load();
   draw();
+  // Fetch whatever the phone has pushed since; redraw only if something changed and nobody is typing.
+  const idle = () => !root.querySelector('[data-field=kg]')?.value;
+  pullHealth().then(async (changed) => {
+    if (changed === 'off') return;
+    if (changed > 0) await load();
+    if (idle()) draw(); // also refreshes the "last checked" line
+  }).catch(() => { if (idle()) draw(); }); // the error shows in the sync line
 }
