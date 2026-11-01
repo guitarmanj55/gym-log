@@ -12,12 +12,16 @@ import * as summary from './screens/summary.js';
 import * as workout from './screens/workout.js';
 import * as library from './screens/library.js';
 import * as food from './screens/food.js';
+import * as home from './screens/home.js';
+import * as health from './screens/health.js';
 import { clearDraft } from './lib/wo-draft.js';
 
-const SCREENS = { today, food, history, lift, profile, active, summary, workout, library };
-const TAB_OF = { workout: 'today', library: 'lift' }; // screens opened from another tab keep that tab lit
-const NO_TABS = new Set(['active']); // full-screen, like the design
-const DEFAULT_SCREEN = 'today';
+const SCREENS = { home, today, food, health, history, lift, profile, active, summary, workout, library };
+const TAB_OF = { workout: 'today' }; // the workout editor is opened from Today
+// Full-screen: the active workout (like the design) and the landing page and its Food and Health sections.
+// Only the Gym section (Today, History, Lifts, Library, Profile) has the tab bar.
+const NO_TABS = new Set(['active', 'home', 'food', 'health']);
+const DEFAULT_SCREEN = 'home';
 const VERSION_KEY = 'gymlog_version';
 
 const root = document.getElementById('screen');

@@ -399,6 +399,15 @@ a.btn{text-decoration:none}
 .sheet-name{display:flex;flex-direction:column;gap:2px}
 .sheet-name small{font-size:13px;font-weight:500;color:var(--muted)}
 
+a.text-btn{display:inline-flex;align-items:center;min-width:48px}
+
+/* ============ HOME ============ */
+.home-card{display:flex;flex-direction:column;gap:4px;min-height:112px;justify-content:center;padding:18px 20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;color:var(--text)}
+.home-card:active{opacity:.8}
+.home-name{font-family:var(--font-num);font-size:34px;font-weight:700;line-height:1;color:var(--accent)}
+.home-status{font-size:18px;font-weight:600}
+.home-sub{font-size:14px;color:var(--muted)}
+
 /* ============ FOOD ============ */
 .day-nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .day-nav .chip-btn{min-width:56px;font-size:22px}
@@ -457,10 +466,6 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>
     <span>Today</span>
   </a>
-  <a href="#food" data-tab="food">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 12v9"/><path d="M17 3c-2 1.5-3 4-3 7h3v11"/></svg>
-    <span>Food</span>
-  </a>
   <a href="#history" data-tab="history">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
     <span>History</span>
@@ -468,6 +473,10 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
   <a href="#lift" data-tab="lift">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>
     <span>Lifts</span>
+  </a>
+  <a href="#library" data-tab="library">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5v14M8 5v14"/><rect x="12" y="5" width="4" height="14" rx="1"/><path d="M19 7.5l2 .5-3 11-2-.5"/></svg>
+    <span>Library</span>
   </a>
   <a href="#profile" data-tab="profile">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg>
@@ -480,8 +489,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.23";
-var APP_WHATS_NEW = "New Food tab: save the meals you eat out and log them in one tap; calorie and protein targets in Profile. The exercise library now opens from Lifts";
+var APP_VERSION = "0.24";
+var APP_WHATS_NEW = "New Home page with Gym, Food and Health. Food: save the meals you eat out and log them in one tap. Health: log your weight. The gym tabs are unchanged";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>

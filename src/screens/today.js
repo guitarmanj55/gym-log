@@ -1,9 +1,7 @@
 // Today: your saved workouts (tap one to start it), the workout in progress, this week's training
 // days, sets per muscle group and recent sets.
 import { loadAll, startSession, listWorkouts } from '../db/workout.js';
-import { getSettings, getAll } from '../db/db.js';
-import { dateInputValue } from '../lib/history.js';
-import { dayTotal, fmtKcal } from '../lib/food.js';
+import { getSettings } from '../db/db.js';
 import { e1rm } from '../lib/e1rm.js';
 import { weekStrip, relativeDay, fmtSet, recentTopSets, weeklyCounts } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
@@ -18,7 +16,7 @@ const timeOf = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export async function render(root) {
-  const [all, settings, workouts, meals, foodLog] = await Promise.all([loadAll(), getSettings(), listWorkouts(), getAll('meals'), getAll('foodLog')]);
+  const [all, settings, workouts] = await Promise.all([loadAll(), getSettings(), listWorkouts()]);
   const now = Date.now();
   const active = all.sessions.filter((s) => !s.endedAt).sort((a, b) => b.startedAt - a.startedAt)[0];
 
@@ -91,19 +89,6 @@ export async function render(root) {
       </div>
     </a>` : '';
 
-  // Shown once something is logged today, or whenever a calorie target is set. Never "0 kcal" for an unlogged day.
-  const eaten = dayTotal(dateInputValue(now), foodLog, meals);
-  const foodBlock = eaten.count || settings.calorieTarget ? `
-    <a class="banner ok" href="#food">
-      <div class="dot"></div>
-      <div>
-        <div class="banner-title">${eaten.count ? `Eaten today: ${esc(fmtKcal(eaten, { showRange: false }))} kcal` : 'Nothing eaten logged today'}</div>
-        <div class="banner-sub">${eaten.count && settings.calorieTarget
-          ? (eaten.kcal <= settings.calorieTarget ? `${(settings.calorieTarget - eaten.kcal).toLocaleString('en-GB')} left of ${settings.calorieTarget.toLocaleString('en-GB')}` : `${(eaten.kcal - settings.calorieTarget).toLocaleString('en-GB')} over ${settings.calorieTarget.toLocaleString('en-GB')}`)
-          : 'Tap to log a meal'}</div>
-      </div>
-    </a>` : '';
-
   const strip = weekStrip(all.sessions.filter((s) => s.endedAt || s === active).map((s) => s.startedAt), now);
   const weeks = weeklyCounts(all.sessions.filter((s) => s.endedAt || s === active).map((s) => s.startedAt), now, 8);
   const weekMax = Math.max(1, ...weeks.map((w) => w.count));
@@ -152,6 +137,7 @@ export async function render(root) {
   root.innerHTML = `
     <div class="screen today">
       <div>
+        <a class="text-btn" href="#home">‹ Home</a>
         <div class="date">${settings.name ? `${esc(settings.name)} · ` : ''}${esc(longDate(now))}</div>
         <h1 class="title">Today</h1>
         ${settings.goal ? `<div class="note">Goal: ${esc(settings.goal)}</div>` : ''}
@@ -159,7 +145,6 @@ export async function render(root) {
       ${reminder}
       ${resume}
       ${workoutBlock}
-      ${foodBlock}
       <div class="stack">
         <div class="eyebrow">This week</div>
         <div class="week" role="list" aria-label="Training days this week">

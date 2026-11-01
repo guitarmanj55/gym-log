@@ -108,7 +108,7 @@ export async function render(root) {
     root.innerHTML = `
       <div class="screen food">
         <div>
-          <div class="date">${esc(settings.name ? settings.name : 'Eating')}</div>
+          <a class="text-btn" href="#home">‹ Home</a>
           <h1 class="title">Food</h1>
         </div>
         <div class="day-nav">
