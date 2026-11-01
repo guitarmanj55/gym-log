@@ -22,6 +22,7 @@ export async function render(root) {
   const today = () => dateInputValue(Date.now());
   let days = [];
   let confirmDay = null; // weight waiting for a second tap to remove
+  let showDetails = false; // the sync readout: for checking what the phone's Shortcut sent
 
   async function load() { days = await getAll('health'); }
 
@@ -36,7 +37,7 @@ export async function render(root) {
       return m ? `<div class="tile"><div class="tile-label">${label} · ${esc(relativeDay(noon(m.day), Date.now()))}</div><div class="tile-val">${esc(fmt(m.value))}</div></div>` : '';
     }).filter(Boolean);
     const cloud = getCloud();
-    const debug = new URLSearchParams(location.search).has('debug');
+    const debug = showDetails;
     const syncLine = !cloud.key
       ? 'Apple Health sync uses the backup key. Turn on automatic backup in Profile, then set up the sync.'
       : cloud.healthError ? `Sync problem: ${cloud.healthError}`
@@ -78,7 +79,8 @@ export async function render(root) {
         </div>` : ''}
         <div class="note">${tiles.length ? 'Showing the latest reading of each in the last two weeks. ' : 'Steps, sleep, active energy and resting heart rate show here once Apple Health sync is set up. '}Days without data stay blank, so the app works fine without a watch.</div>
         <div class="note">${esc(syncLine)}</div>
-        ${debug ? `<pre class="note debug">${esc(JSON.stringify({ ...cloud, key: cloud.key ? 'set' : null, imported: days.filter((d) => Object.values(d.src || {}).includes('import')).length, days: days.length }, null, 1))}</pre>` : ''}
+        <button type="button" class="text-btn" data-act="details">${showDetails ? 'Hide' : 'Show'} sync details</button>
+        ${debug ? `<pre class="note debug">${esc(JSON.stringify({ ...cloud, key: cloud.key ? 'set' : null, imported: days.filter((d) => Object.values(d.src || {}).includes('import')).length, days: days.length, newestDay: [...days].sort((a, b) => b.id.localeCompare(a.id))[0] || null }, null, 1))}</pre>` : ''}
       </div>`;
   }
 
@@ -95,6 +97,9 @@ export async function render(root) {
         await load();
         draw();
         toast('Weight saved', 1500);
+      } else if (el.dataset.act === 'details') {
+        showDetails = !showDetails;
+        draw();
       } else if (el.dataset.act === 'del') {
         if (confirmDay !== el.dataset.day) { confirmDay = el.dataset.day; draw(); return; }
         const kept = withoutWeight(await get('health', el.dataset.day));
