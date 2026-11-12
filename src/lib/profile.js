@@ -109,3 +109,22 @@ export function nextSplit(splits, sets, exercises, now) {
   if (pick.at && pick.at >= startOfToday) return null;
   return { split: pick.split, days: pick.days };
 }
+
+/**
+ * The saved workout to put first on Today: the one named after the suggested pairing
+ * ("Chest + Triceps", case and spacing ignored, "&" or "and" for "+"), else one whose name
+ * starts with the main group, else the one done longest ago (never done counts as oldest).
+ * lastDone: Map workoutId -> startedAt. Returns a workout or null.
+ */
+export function upNextWorkout(workouts, lastDone, split = null) {
+  if (!workouts?.length) return null;
+  const norm = (s) => String(s).toLowerCase().replace(/\s*(\+|&|\band\b)\s*/g, '+').replace(/\s+/g, ' ').trim();
+  if (split) {
+    const exact = workouts.find((w) => norm(w.name) === norm(splitLabel(split)));
+    if (exact) return exact;
+    const main = groupLabel(split.main).toLowerCase();
+    const byMain = workouts.find((w) => norm(w.name).startsWith(main));
+    if (byMain) return byMain;
+  }
+  return [...workouts].sort((a, b) => (lastDone.get(a.id) || 0) - (lastDone.get(b.id) || 0))[0];
+}

@@ -12,16 +12,14 @@ import * as summary from './screens/summary.js';
 import * as workout from './screens/workout.js';
 import * as library from './screens/library.js';
 import * as food from './screens/food.js';
-import * as home from './screens/home.js';
 import * as health from './screens/health.js';
 import { clearDraft } from './lib/wo-draft.js';
 
-const SCREENS = { home, today, food, health, history, lift, profile, active, summary, workout, library };
-const TAB_OF = { workout: 'today' }; // the workout editor is opened from Today
-// Full-screen: the active workout (like the design) and the landing page and its Food and Health sections.
-// Only the Gym section (Today, History, Lifts, Library, Profile) has the tab bar.
-const NO_TABS = new Set(['active', 'home', 'food', 'health']);
-const DEFAULT_SCREEN = 'home';
+const SCREENS = { today, food, health, history, lift, profile, active, summary, workout, library };
+// Four tabs: Train (Today, History, Lifts and Library, switched at the top of the screen), Food, Body, You.
+const TAB_OF = { today: 'train', history: 'train', lift: 'train', library: 'train', workout: 'train', summary: 'train', health: 'body', profile: 'you' };
+const NO_TABS = new Set(['active']); // the active workout is full-screen, like the design
+const DEFAULT_SCREEN = 'today'; // also catches the old #home landing page
 const VERSION_KEY = 'gymlog_version';
 
 const root = document.getElementById('screen');
@@ -53,16 +51,16 @@ async function route() {
   markBackupTab();
 }
 
-/** Warning dot on the Profile tab while a backup is overdue (iOS web apps can't notify without a push server). */
+/** Warning dot on the You tab while a backup is overdue (iOS web apps can't notify without a push server). */
 async function markBackupTab() {
   try {
     const cloud = getCloud();
     const status = backupStatus(await getSettings(), await count('sessions'), Date.now(), cloud.lastAt);
     // With automatic backup on, only a failing upload is worth a dot.
     const alert = cloud.key ? Boolean(cloud.error) : status.overdue;
-    const tab = document.querySelector('#tabs a[data-tab=profile]');
+    const tab = document.querySelector('#tabs a[data-tab=you]');
     tab.classList.toggle('alert', alert);
-    tab.setAttribute('aria-label', alert ? 'Profile, backup needs attention' : 'Profile');
+    tab.setAttribute('aria-label', alert ? 'You, backup needs attention' : 'You');
   } catch { /* storage unavailable: no dot */ }
 }
 

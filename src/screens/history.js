@@ -2,7 +2,7 @@
 import { loadAll, discardSession, updateSet, deleteSet, moveSession, renameSession } from '../db/workout.js';
 import { searchText } from '../lib/exercise.js';
 import { groupLabel, shortDate, fmtDuration, fmtSet, headlineSet, prSetIds, matchesQuery, dateInputValue, dayDiff, parseAmount } from '../lib/history.js';
-import { esc, toast, fmtKg } from '../ui.js';
+import { esc, toast, fmtKg, trainHead } from '../ui.js';
 
 const SEARCH_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
 const BADGE = { warmup: 'W', top: 'SET', backoff: 'BO' };
@@ -112,7 +112,7 @@ export async function render(root) {
 
   root.innerHTML = `
     <div class="screen hist">
-      <h1 class="title">History</h1>
+      ${trainHead('history')}
       <div class="search">
         ${SEARCH_ICON}
         <input type="search" class="text-input" placeholder="Search lifts or sessions" aria-label="Search lifts or sessions" autocomplete="off" enterkeyhint="search" value="${esc(query)}">

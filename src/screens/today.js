@@ -6,11 +6,11 @@ import { e1rm } from '../lib/e1rm.js';
 import { weekStrip, relativeDay, fmtSet, recentTopSets, weeklyCounts } from '../lib/history.js';
 import { backupStatus } from '../lib/backup.js';
 import { weeklyMuscleSets, fmtSetCount, staleLifts, stalledLifts } from '../lib/feedback.js';
-import { nextSplit, splitLabel } from '../lib/profile.js';
+import { nextSplit, splitLabel, upNextWorkout } from '../lib/profile.js';
 import { groupLabel } from '../lib/library.js';
 import { unlockAudio } from '../device.js';
 import { getCloud } from '../cloud.js';
-import { esc, longDate, toast, versionLine } from '../ui.js';
+import { esc, longDate, toast, trainHead, versionLine } from '../ui.js';
 
 const timeOf = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -37,40 +37,45 @@ export async function render(root) {
   const lastDone = new Map(); // workoutId -> startedAt of the latest finished session (finished is newest first)
   for (const s of all.finished) if (s.workoutId && !lastDone.has(s.workoutId)) lastDone.set(s.workoutId, s.startedAt);
 
-  const workoutCards = workouts.map((w) => {
-    const names = w.exerciseIds.map((id) => all.exercises.get(id)?.name).filter(Boolean);
-    const last = lastDone.get(w.id);
-    return `
-      <div class="wo-card">
-        <div class="wo-head">
-          <div class="wo-name">${esc(w.name)}</div>
-          <a class="text-btn" href="#workout/${esc(w.id)}" aria-label="Edit ${esc(w.name)}">Edit</a>
-        </div>
-        <div class="wo-ex">${names.length ? names.map(esc).join(' · ') : 'No exercises yet'}</div>
-        <div class="wo-foot">
-          <span class="muted">${last ? `Last done ${esc(relativeDay(last, now))}` : 'Not done yet'}</span>
-          ${active ? '' : `<button type="button" class="btn btn-primary wo-start" data-act="start" data-id="${esc(w.id)}">Start</button>`}
-        </div>
-      </div>`;
-  }).join('');
+  const lastText = (w) => (lastDone.has(w.id) ? `Last done ${relativeDay(lastDone.get(w.id), now)}` : 'Not done yet');
 
+  // One workout gets the big card and the only lime button; the rest are quiet rows.
   const next = active ? null : nextSplit(settings.splits, all.sets, all.exercises, now);
-  const nextBlock = next ? `
-    <a class="banner ok" href="#profile">
-      <div class="dot"></div>
-      <div>
-        <div class="banner-title">Train next: ${esc(splitLabel(next.split))}</div>
-        <div class="banner-sub">${next.days === null ? `No ${esc(groupLabel(next.split.main).toLowerCase())} logged yet` : `${esc(groupLabel(next.split.main))} last trained ${next.days === 1 ? 'yesterday' : `${next.days} days ago`}`}</div>
-      </div>
-    </a>` : '';
+  const upNext = active ? null : upNextWorkout(workouts, lastDone, next?.split);
+  const why = next && upNext && splitLabel(next.split).toLowerCase().replace(/\s/g, '') === upNext.name.toLowerCase().replace(/\s/g, '')
+    ? (next.days === null ? `No ${groupLabel(next.split.main).toLowerCase()} logged yet` : `${groupLabel(next.split.main)} last trained ${next.days === 1 ? 'yesterday' : `${next.days} days ago`}`)
+    : lastText(upNext || {});
+  const upNextCard = upNext ? (() => {
+    const names = upNext.exerciseIds.map((id) => all.exercises.get(id)?.name).filter(Boolean);
+    return `
+      <div class="card up-card">
+        <div class="wo-head">
+          <div class="note">Up next · ${esc(why)}</div>
+          <a class="text-btn" href="#workout/${esc(upNext.id)}" aria-label="Edit ${esc(upNext.name)}">Edit</a>
+        </div>
+        <div class="wo-name">${esc(upNext.name)}</div>
+        <div class="wo-ex">${names.length ? esc(names.join(', ')) : 'No exercises yet'}</div>
+        <button type="button" class="btn btn-primary" data-act="start" data-id="${esc(upNext.id)}">Start workout</button>
+      </div>`;
+  })() : '';
+
+  const others = workouts.filter((w) => w !== upNext);
+  const otherRows = others.map((w) => `
+    <div class="wo-line">
+      <a class="wo-line-main" href="#workout/${esc(w.id)}" aria-label="Edit ${esc(w.name)}">
+        <span class="wo-line-name">${esc(w.name)}</span>
+        <small>${esc(lastText(w))}</small>
+      </a>
+      ${active ? '' : `<button type="button" class="chip-btn" data-act="start" data-id="${esc(w.id)}">Start</button>`}
+    </div>`).join('');
 
   const workoutBlock = `
+    ${upNextCard}
     <div class="stack">
-      ${nextBlock}
-      <div class="eyebrow">Your workouts</div>
-      ${workouts.length ? workoutCards : `
+      ${others.length ? `<div class="eyebrow">${upNext ? 'Other workouts' : 'Your workouts'}</div><div class="list">${otherRows}</div>` : ''}
+      ${workouts.length ? '' : `
         <div class="card">
-          <div class="lead">Make a workout for each kind of day you train, like Push, Pull and Legs. Pick its exercises once, then start it with one tap every time.</div>
+          <div class="lead">Make a workout for each kind of day you train, like Chest + Triceps or Back + Biceps. Pick its exercises once, then start it with one tap every time.</div>
         </div>`}
       <a class="btn ${workouts.length ? 'btn-secondary' : 'btn-primary'}" href="#workout/new">+ New workout</a>
       ${active ? '' : '<button type="button" class="text-btn" data-act="start-empty">Or start an empty workout</button>'}
@@ -85,7 +90,7 @@ export async function render(root) {
       <div class="dot"></div>
       <div>
         <div class="banner-title">${esc(cloud.key ? 'Automatic backup is failing' : backup.title)}</div>
-        <div class="banner-sub">${esc(cloud.key ? cloud.error : `${backup.sub} · tap to export`)}</div>
+        <div class="banner-sub">${esc(cloud.key ? cloud.error : `${backup.sub}. Turn on automatic backup in You.`)}</div>
       </div>
     </a>` : '';
 
@@ -136,12 +141,8 @@ export async function render(root) {
 
   root.innerHTML = `
     <div class="screen today">
-      <div>
-        <a class="text-btn" href="#home">‹ Home</a>
-        <div class="date">${settings.name ? `${esc(settings.name)} · ` : ''}${esc(longDate(now))}</div>
-        <h1 class="title">Today</h1>
-        ${settings.goal ? `<div class="note">Goal: ${esc(settings.goal)}</div>` : ''}
-      </div>
+      ${trainHead('today', { date: `${settings.name ? `${settings.name}, ` : ''}${longDate(now)}` })}
+      ${settings.goal ? `<div class="note">Goal: ${esc(settings.goal)}</div>` : ''}
       ${reminder}
       ${resume}
       ${workoutBlock}

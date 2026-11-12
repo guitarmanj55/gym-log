@@ -6,7 +6,7 @@ import { LIBRARY_GROUPS, filterLibrary, detailsFor, imagePaths, subtitle, groupL
 import { equipmentLabel } from '../lib/exercise.js';
 import { findOrCreateExercise, listExercises, listWorkouts, saveWorkout, addExerciseToSession, getActiveSession } from '../db/workout.js';
 import { readDraft, writeDraft } from '../lib/wo-draft.js';
-import { esc, toast } from '../ui.js';
+import { esc, toast, trainHead } from '../ui.js';
 
 const SAVED_KEY = 'gymlib_saved'; // set once every photo has been fetched for offline use
 const view = { group: '', query: '' }; // kept while the app is open, so Back returns to the same list
@@ -63,7 +63,7 @@ async function renderList(root) {
 
   root.innerHTML = `
     <div class="screen">
-      <h1 class="title">Library</h1>
+      ${trainHead('library')}
       <div id="lib-banner">${backBanner(draft)}</div>
       <div class="search">
         <span class="search-icon">${ICON.search}</span>
@@ -87,7 +87,7 @@ async function renderList(root) {
       return `
         <div class="lib-row">
           <a class="lib-main" href="#library/${e.id}">
-            <img class="lib-thumb" src="library/${e.id}/0.jpg" alt="" loading="lazy" width="56" height="56">
+            <img class="lib-thumb" src="library/${e.id}/0.jpg" alt="" loading="lazy" width="56" height="56" onerror="this.style.visibility='hidden'">
             <span class="lib-name"><span>${esc(e.name)}</span><small>${esc(view.group ? subtitle(e) : `${groupLabel(e.group)} · ${equipmentLabel(e.equipment)}`)}</small></span>
           </a>
           <button type="button" class="lib-add${added ? ' done' : ''}" data-add="${e.id}" aria-label="${added ? 'Added' : 'Add'} ${esc(e.name)}">${added ? ICON.check : ICON.plus}</button>

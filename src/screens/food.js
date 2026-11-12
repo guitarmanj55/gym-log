@@ -67,7 +67,7 @@ export async function render(root) {
           ${e.mealId ? '' : '<button type="button" class="text-btn food-save" data-act="save-as-meal" data-id="' + esc(e.id) + '">Save as meal</button>'}
         </div>
         <div class="food-kcal">${e.kcal.toLocaleString('en-GB')}</div>
-        <button type="button" class="text-btn${confirmId === e.id ? ' danger' : ''}" data-act="del" data-id="${esc(e.id)}" aria-label="Remove ${esc(e.name)}">${confirmId === e.id ? 'Remove?' : '×'}</button>
+        <button type="button" class="text-btn${confirmId === e.id ? ' danger' : ''}" data-act="del" data-id="${esc(e.id)}" aria-label="Remove ${esc(e.name)}">${confirmId === e.id ? 'Sure?' : 'Remove'}</button>
       </div>`).join('');
 
     const mealRows = list.map((m) => {
@@ -107,13 +107,10 @@ export async function render(root) {
 
     root.innerHTML = `
       <div class="screen food">
-        <div>
-          <a class="text-btn" href="#home">‹ Home</a>
-          <h1 class="title">Food</h1>
-        </div>
+        <h1 class="title">Food</h1>
         <div class="day-nav">
           <button type="button" class="chip-btn" data-act="prev" aria-label="Previous day">‹</button>
-          <div class="day-label">${esc(dayLabel())}</div>
+          <div class="day-nav-label">${esc(dayLabel())}</div>
           <button type="button" class="chip-btn" data-act="next" aria-label="Next day" ${day >= today() ? 'disabled' : ''}>›</button>
         </div>
         ${totalBlock}
@@ -121,6 +118,7 @@ export async function render(root) {
         ${entries.length ? `<div class="stack"><div class="eyebrow">Eaten</div><div class="list food-list">${entryRows}</div></div>` : ''}
         <div class="stack">
           <div class="eyebrow">Add a meal</div>
+          <div class="field-label">Portion of the next meal you tap</div>
           <div class="segmented" role="group" aria-label="Portion">
             ${PORTIONS.map((p) => `<button type="button" data-act="portion" data-value="${p.value}" aria-pressed="${p.value === portion}">${p.label}</button>`).join('')}
           </div>

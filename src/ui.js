@@ -58,6 +58,20 @@ export function comingSoon(root, { date, title, body }) {
     </div>`;
 }
 
+const TRAIN_VIEWS = [['today', 'Today'], ['history', 'History'], ['lift', 'Lifts'], ['library', 'Library']];
+
+/** The header every Train screen shares: optional date line, "Train", then the Today / History / Lifts / Library switch. */
+export function trainHead(current, { date = '' } = {}) {
+  return `
+    <div>
+      ${date ? `<div class="date">${esc(date)}</div>` : ''}
+      <h1 class="title">Train</h1>
+    </div>
+    <nav class="segmented train-nav" aria-label="Train">
+      ${TRAIN_VIEWS.map(([key, label]) => `<a href="#${key}"${key === current ? ' aria-current="page"' : ''}>${label}</a>`).join('')}
+    </nav>`;
+}
+
 /** The small version note at the bottom of a screen. */
 export function versionLine() {
   return `<div class="note">Version ${esc(globalThis.APP_VERSION)}</div>`;

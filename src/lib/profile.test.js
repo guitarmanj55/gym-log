@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withCurrent, togglePlate, fmtRest, fmtVolume, weekStreak, lifetimeStats, nextSplit, splitLabel } from './profile.js';
+import { withCurrent, togglePlate, fmtRest, fmtVolume, weekStreak, lifetimeStats, nextSplit, splitLabel, upNextWorkout } from './profile.js';
 import { normaliseSettings } from '../db/schema.js';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -76,4 +76,14 @@ test('normaliseSettings sanitises the profile fields', () => {
   assert.deepEqual(s.splits, [{ main: 'chest', support: 'triceps' }]);
   assert.equal(normaliseSettings({ sound: false }).sound, false);
   assert.equal(normaliseSettings({ restSec: 90 }).restSec, 90);
+});
+
+test('upNextWorkout matches the suggested pairing, then the main group, then the oldest', () => {
+  const ws = [{ id: 'a', name: 'Back & Biceps' }, { id: 'b', name: 'chest+triceps' }, { id: 'c', name: 'Legs day' }];
+  const last = new Map([['a', 3], ['b', 2], ['c', 1]]);
+  assert.equal(upNextWorkout(ws, last, { main: 'chest', support: 'triceps' }).id, 'b');
+  assert.equal(upNextWorkout(ws, last, { main: 'back', support: 'triceps' }).id, 'a');
+  assert.equal(upNextWorkout(ws, last, { main: 'shoulders', support: 'legs' }).id, 'c');
+  assert.equal(upNextWorkout(ws, new Map([['a', 3], ['c', 1]])).id, 'b'); // never done counts as oldest
+  assert.equal(upNextWorkout([], last), null);
 });

@@ -7,7 +7,7 @@ import { detailLine, musclesLine } from '../lib/exercise.js';
 import { updateExercise } from '../db/workout.js';
 import { detailFields, formAttrs, readDetails } from './exercise-form.js';
 import { overviewHtml } from './overview.js';
-import { esc, fmtKg, toast } from '../ui.js';
+import { esc, fmtKg, toast, trainHead } from '../ui.js';
 
 const LIFT_KEY = 'gymlog_lift';
 const RANGE_KEY = 'gymlog_range';
@@ -35,8 +35,9 @@ export async function render(root) {
   if (!lifts.length) {
     root.innerHTML = `
       <div class="screen">
-        <h1 class="title">Lifts</h1>
-        <div class="lead">Log a workout and each lift gets its e1RM trend here.</div>      </div>`;
+        ${trainHead('lift')}
+        <div class="lead">Log a workout and each lift gets its e1RM trend here.</div>
+      </div>`;
     return;
   }
 
@@ -79,7 +80,7 @@ export async function render(root) {
   function drawAll() {
     root.innerHTML = `
       <div class="screen lift">
-        <h1 class="title">Lifts</h1>
+        ${trainHead('lift')}
         ${viewToggle()}
         ${overviewHtml({ lifts, sets, range, metric })}
       </div>`;
@@ -105,9 +106,10 @@ export async function render(root) {
 
     root.innerHTML = `
       <div class="screen lift">
+        ${trainHead('lift')}
         ${viewToggle()}
         <div class="lift-head">
-          <h1 class="title">${esc(lift.name)}</h1>
+          <h2 class="title lib-title">${esc(lift.name)}</h2>
           <button type="button" class="chip-btn change-lift" data-act="pick">Change lift ${CHEVRON}</button>
         </div>
         <button type="button" class="ex-details" data-act="edit" aria-label="Edit details for ${esc(lift.name)}">

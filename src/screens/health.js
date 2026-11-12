@@ -39,7 +39,7 @@ export async function render(root) {
     const cloud = getCloud();
     const debug = showDetails;
     const syncLine = !cloud.key
-      ? 'Apple Health sync uses the backup key. Turn on automatic backup in Profile, then set up the sync.'
+      ? 'Apple Health sync uses the backup key. Turn on automatic backup in You, then set up the sync.'
       : cloud.healthError ? `Sync problem: ${cloud.healthError}`
       : cloud.healthAt ? `Last checked for Apple Health numbers ${new Date(cloud.healthAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}.`
       : 'Not checked yet.';
@@ -47,10 +47,7 @@ export async function render(root) {
 
     root.innerHTML = `
       <div class="screen health">
-        <div>
-          <a class="text-btn" href="#home">‹ Home</a>
-          <h1 class="title">Health</h1>
-        </div>
+        <h1 class="title">Body</h1>
         <div class="card">
           <div class="eyebrow">Weight</div>
           ${avg ? `
@@ -73,7 +70,7 @@ export async function render(root) {
               <div class="food-row">
                 <div class="food-main"><div class="food-name">${esc(shortDate(noon(r.day)))}</div></div>
                 <div class="food-kcal">${r.kg}</div>
-                <button type="button" class="text-btn${confirmDay === r.day ? ' danger' : ''}" data-act="del" data-day="${esc(r.day)}" aria-label="Remove weight for ${esc(r.day)}">${confirmDay === r.day ? 'Remove?' : '×'}</button>
+                <button type="button" class="text-btn${confirmDay === r.day ? ' danger' : ''}" data-act="del" data-day="${esc(r.day)}" aria-label="Remove weight for ${esc(r.day)}">${confirmDay === r.day ? 'Sure?' : 'Remove'}</button>
               </div>`).join('')}
           </div>
         </div>` : ''}

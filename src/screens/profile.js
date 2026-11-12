@@ -41,9 +41,9 @@ export async function render(root) {
 
   root.innerHTML = `
     <div class="screen">
-      <h1 class="title">Profile</h1>
+      <h1 class="title">You</h1>
 
-      <div class="eyebrow">You</div>
+      <div class="eyebrow">Name and goal</div>
       <div class="stack">
         <label class="field">
           <span class="field-label">Name</span>
