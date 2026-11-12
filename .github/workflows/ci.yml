@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Hygiene check (syntax, secrets, conflict markers)
+        run: node scripts/check.mjs
+      - name: Install
+        run: |
+          if [ -f package-lock.json ]; then npm ci; fi
+      - name: Unit tests
+        run: |
+          if [ -f package.json ] && grep -q '"test"' package.json; then npm test; else node --test; fi
