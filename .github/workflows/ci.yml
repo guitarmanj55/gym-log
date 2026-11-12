@@ -21,6 +21,9 @@ jobs:
       - name: Install
         run: |
           if [ -f package-lock.json ]; then npm ci; fi
+      - name: Type check (repos with a typecheck script)
+        run: |
+          if [ -f package.json ] && grep -q '"typecheck"' package.json; then npm run typecheck; fi
       - name: Unit tests
         run: |
           if [ -f package.json ] && grep -q '"test"' package.json; then npm test; else node --test; fi
