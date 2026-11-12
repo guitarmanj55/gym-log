@@ -5,6 +5,7 @@
 <title>Gym Log</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0E0F11">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
 /* Theme before first paint: Auto follows the phone, Dark/Light are the user's choice (localStorage, per device). */
 (function () {
@@ -15,6 +16,9 @@
     document.documentElement.dataset.theme = t;
     var m = document.querySelector('meta[name=theme-color]');
     if (m) m.content = t === 'light' ? '#F4F5F7' : '#0E0F11';
+    /* Light theme wants the dark-text status bar, dark theme the white one. */
+    var s = document.querySelector('meta[name=apple-mobile-web-app-status-bar-style]');
+    if (s) s.content = t === 'light' ? 'default' : 'black-translucent';
   }
   window.gymlogTheme = { get: pref, set: function (v) { try { if (v === 'auto') localStorage.removeItem(KEY); else localStorage.setItem(KEY, v); } catch (e) {} apply(); } };
   if (mq.addEventListener) mq.addEventListener('change', apply);
@@ -24,7 +28,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Gym Log">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
@@ -75,8 +78,6 @@
   --trend:#9AA0AB;
   color-scheme:light;
 }
-/* The app uses the black-translucent status bar (white clock), so keep a dark strip behind it in the light theme. */
-:root[data-theme="light"] body::before{content:'';position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:#0E0F11;z-index:40;pointer-events:none}
 
 /* ============ BASE ============ */
 *{box-sizing:border-box}
@@ -493,8 +494,8 @@ button, a, label, summary, nav, [role="button"], [role="tab"] { -webkit-touch-ca
 
 <script>
 /* Release routine: bump these, bump CACHE in sw.js, run the tests, push to main. */
-var APP_VERSION = "0.25.1";
-var APP_WHATS_NEW = "Health can pull steps, sleep, active energy and resting heart rate from Apple Health (one-time sync setup). New: Show sync details on the Health screen";
+var APP_VERSION = "0.25.2";
+var APP_WHATS_NEW = "Light theme no longer has a grey strip at the top: the status bar uses dark text on light screens. If the clock still looks wrong, remove the app from the home screen and add it again.";
 </script>
 <script type="module" src="src/app.js"></script>
 </body>
