@@ -72,9 +72,9 @@ export async function render(root) {
   }
 
   const viewToggle = () => `
-    <div class="segmented" role="group" aria-label="View">
-      <button type="button" data-act="view" data-view="one" aria-pressed="${view === 'one'}">One lift</button>
-      <button type="button" data-act="view" data-view="all" aria-pressed="${view === 'all'}">All lifts</button>
+    <div class="lib-groups" role="group" aria-label="View">
+      <button type="button" class="chip-btn" data-act="view" data-view="one" aria-pressed="${view === 'one'}">One lift</button>
+      <button type="button" class="chip-btn" data-act="view" data-view="all" aria-pressed="${view === 'all'}">All lifts</button>
     </div>`;
 
   function drawAll() {

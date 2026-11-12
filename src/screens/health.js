@@ -56,7 +56,7 @@ export async function render(root) {
           : last ? `<div class="lead">Last weighed ${esc(shortDate(noon(last.day)))}: ${last.kg} kg. Nothing in the last 7 days.</div>`
           : '<div class="lead">No weight logged yet.</div>'}
           <div class="food-quick">
-            <input class="text-input" data-field="date" type="date" max="${now}" value="${now}" aria-label="Date">
+            <label class="text-input date-pick"><span>Today</span><input data-field="date" type="date" max="${now}" value="${now}" aria-label="Date"></label>
             <input class="text-input" data-field="kg" type="text" inputmode="decimal" autocomplete="off" placeholder="kg" aria-label="Weight in kilograms">
           </div>
           <button type="button" class="btn btn-primary" data-act="save">Save weight</button>
@@ -108,6 +108,13 @@ export async function render(root) {
     } catch (err) {
       toast(err.message || String(err), 5000);
     }
+  });
+
+  // The date picker is the native one, shown as "Today" or "Wed 11 Nov" instead of 11/11/2026.
+  root.addEventListener('change', (ev) => {
+    if (ev.target.dataset.field !== 'date') return;
+    const day = ev.target.value;
+    ev.target.previousElementSibling.textContent = !day || day === today() ? 'Today' : shortDate(noon(day));
   });
 
   await load();

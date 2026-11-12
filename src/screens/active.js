@@ -39,7 +39,7 @@ export function clearWorkoutState() {
 }
 
 const TYPE_LABEL = { warmup: 'Warm-up', top: 'Set', backoff: 'Back-off' };
-const TYPE_BADGE = { warmup: 'W', top: 'SET', backoff: 'BO' };
+const TYPE_BADGE = TYPE_LABEL; // full words everywhere, like the editor card
 
 const ICON = {
   back: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
@@ -147,7 +147,7 @@ export async function render(root) {
       <div class="rest-card${left === 0 ? ' rest-done' : ''}" id="rest">
         <div class="rest-top">
           <div class="rest-read">
-            <div class="rest-label" id="rest-label">${left === 0 ? 'REST OVER' : 'REST'}</div>
+            <div class="rest-label" id="rest-label">${left === 0 ? 'Rest over' : 'Rest'}</div>
             <div class="rest-time" id="rest-time">${fmtClock(left)}</div>
           </div>
           <div class="rest-btns">
@@ -181,7 +181,7 @@ export async function render(root) {
     return `
       <div class="set-row${done ? ' done' : ''}">
         <button type="button" class="set-main" data-act="focus" data-key="${r.key}" aria-label="Edit ${TYPE_LABEL[r.type]}${r.of > 1 ? ` ${r.n}` : ''} ${fmtKg(r.weightKg)} kg for ${r.reps}">
-          <span class="badge">${TYPE_BADGE[r.type]}${r.of > 1 ? `<small>${r.n}</small>` : ''}</span>
+          <span class="badge">${TYPE_BADGE[r.type]}${r.of > 1 ? `<small> ${r.n}</small>` : ''}</span>
           <span class="set-num">${fmtKg(r.weightKg)}</span>
           <span class="set-num">${r.reps}${r.toFailure ? '<span class="fail-mark" title="To failure">F</span>' : ''}${pr}</span>
         </button>
@@ -234,17 +234,17 @@ export async function render(root) {
     return `
       <div class="set-editor type-${e.type}">
         <div class="ed-top">
-          <div class="ed-badge">${TYPE_LABEL[e.type].toUpperCase()}${e.of > 1 ? ` ${e.n} OF ${e.of}` : ''}${editing ? ' · LOGGED' : ''}</div>
+          <div class="ed-badge">${TYPE_LABEL[e.type]}${e.of > 1 ? ` ${e.n} of ${e.of}` : ''}${editing ? ', logged' : ''}</div>
           ${canFail ? `<button type="button" class="fail-btn" data-act="failure" aria-pressed="${!!e.toFailure}">${e.toFailure ? ICON.checkSmall : ''}To failure</button>` : ''}
         </div>
         <div class="stepper">
-          <div class="st-label">KG</div>
+          <div class="st-label">kg</div>
           <button type="button" class="st-btn" data-act="kg-" aria-label="Decrease weight by ${fmtKg(step)} kilograms">${ICON.minus}</button>
           <input class="st-val" data-field="weightKg" type="text" inputmode="decimal" enterkeyhint="done" autocomplete="off" aria-label="Weight in kilograms" value="${fmtKg(e.weightKg)}">
           <button type="button" class="st-btn" data-act="kg+" aria-label="Increase weight by ${fmtKg(step)} kilograms">${ICON.plus}</button>
         </div>
         <div class="stepper">
-          <div class="st-label">REPS</div>
+          <div class="st-label">Reps</div>
           <button type="button" class="st-btn" data-act="reps-" aria-label="Decrease reps">${ICON.minus}</button>
           <input class="st-val" data-field="reps" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" autocomplete="off" aria-label="Reps" value="${e.reps}">
           <button type="button" class="st-btn" data-act="reps+" aria-label="Increase reps">${ICON.plus}</button>
@@ -273,7 +273,7 @@ export async function render(root) {
       ${detailsLine(it)}
       ${lastLine(it)}
       <div class="sets">
-        <div class="set-head"><span>SET</span><span>KG</span><span>REPS</span><span></span></div>
+        <div class="set-head"><span>Type</span><span>kg</span><span>Reps</span><span></span></div>
         ${rows.map((r) => (editor && r.key === editor.key ? editorCard(it) : rowLine(r, prs))).join('')}
       </div>
       <div class="add-sets">
@@ -613,7 +613,7 @@ export async function render(root) {
     if (!card) return;
     card.classList.toggle('rest-done', left === 0);
     root.querySelector('#rest-time').textContent = fmtClock(left);
-    root.querySelector('#rest-label').textContent = left === 0 ? 'REST OVER' : 'REST';
+    root.querySelector('#rest-label').textContent = left === 0 ? 'Rest over' : 'Rest';
     root.querySelector('#rest-skip').textContent = left === 0 ? 'Done' : 'Skip';
     root.querySelector('#rest-bar').style.width = `${restProgress(st.rest, now) * 100}%`;
   }, 250);

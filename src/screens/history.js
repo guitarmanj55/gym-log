@@ -5,7 +5,7 @@ import { groupLabel, shortDate, fmtDuration, fmtSet, headlineSet, prSetIds, matc
 import { esc, toast, fmtKg, trainHead } from '../ui.js';
 
 const SEARCH_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>';
-const BADGE = { warmup: 'W', top: 'SET', backoff: 'BO' };
+const BADGE = { warmup: 'Warm-up', top: 'Set', backoff: 'Back-off' };
 
 let query = ''; // kept while switching tabs
 
@@ -100,9 +100,9 @@ export async function render(root) {
       <div class="sheet-backdrop" data-act="close"></div>
       <div class="sheet" role="dialog" aria-label="Edit set">
         <div class="sheet-head"><div class="eyebrow">${esc(ex?.name)} · ${esc(BADGE[x.type])}</div><button type="button" class="text-btn" data-act="close">Cancel</button></div>
-        <label class="field"><span class="field-label">KG</span>
+        <label class="field"><span class="field-label">kg</span>
           <input class="text-input" name="weightKg" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" value="${fmtKg(x.weightKg)}"></label>
-        <label class="field"><span class="field-label">REPS</span>
+        <label class="field"><span class="field-label">Reps</span>
           <input class="text-input" name="reps" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done" value="${x.reps}"></label>
         ${x.type === 'warmup' ? '' : `<label class="check-row"><input type="checkbox" name="toFailure"${x.toFailure ? ' checked' : ''}> To failure</label>`}
         <button type="button" class="btn btn-primary" data-act="save-set">Save changes</button>
